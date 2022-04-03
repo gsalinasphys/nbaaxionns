@@ -1,6 +1,7 @@
 import numpy as np
 from numba import njit
 
+
 # Magnitude of vectors
 @njit
 def mag(vs):
