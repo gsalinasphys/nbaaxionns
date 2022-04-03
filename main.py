@@ -1,10 +1,9 @@
 import time
 
 import numpy as np
-from numba import njit
 
 from classes import NeutronStar, Particles
-from scripts import mag, nums_vs, update_ps
+from scripts import update_ps
 
 
 def main():
