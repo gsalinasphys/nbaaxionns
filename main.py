@@ -1,8 +1,11 @@
 import time
+
 import numpy as np
-from classes import Particles, NeutronStar
-from scripts import mag, nums_vs
 from numba import njit
+
+from classes import NeutronStar, Particles
+from scripts import mag, nums_vs
+
 
 @njit
 def verlet_step(p, NS, rprecision=1e-3):

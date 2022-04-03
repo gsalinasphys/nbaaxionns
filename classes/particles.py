@@ -1,7 +1,6 @@
 import numpy as np
-from numba import float64    # import the types
+from numba import float64  # import the types
 from numba.experimental import jitclass
-
 from scripts import axionmass, mag, nums_vs
 
 spec = [
