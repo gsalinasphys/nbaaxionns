@@ -1,7 +1,9 @@
+import random
+
 import numpy as np
 from numba import njit
 
-from scripts.basic import mag
+from scripts.basic import mag, randinsphere
 from scripts.globals import G, axionmass, outdir
 
 
@@ -27,6 +29,13 @@ def min_approach(p: object, NS: object) -> np.ndarray:
 def rm_far(p: object, NS: object, rmax: float) -> None:
     indices = np.where(min_approach(p, NS) > rmax)[0]
     p.rm_ps(indices)
+
+ # Draw positions weighted by density profile
+def draw_rs(AC: object, n: int, res: int = 1000) -> np.ndarray:
+    points = AC.rtrunc()*np.array([randinsphere() for _ in range(n*res)]) + AC.rCM
+    rdrawn = random.choices(points, weights=AC.rho_prf(points), k=n)
+
+    return np.array(rdrawn)
 
 # Implementation of Verlet's method to update position and velocity (for reference, see Velocity Verlet in https://en.m.wikipedia.org/wiki/Verlet_integration)
 @njit

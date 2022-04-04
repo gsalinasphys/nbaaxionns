@@ -1,7 +1,7 @@
 import numpy as np
 from numba import float64, int8  # import the types
 from numba.experimental import jitclass
-from scripts.basic import heav, mag
+from scripts.basic import heav, mag, randinsphere
 from scripts.globals import G, rho_eq
 
 spec = [
@@ -10,16 +10,18 @@ spec = [
     ('mass', float64),
     ('delta', float64),
     ('c', float64),
+    ('vdisptype', int8)
 ]
 
 @jitclass(spec)
 class AxionMiniclusterNFW:
-    def __init__(self, rCM, vCM, mass=1., delta=1.55, c=100.):
+    def __init__(self, rCM, vCM, mass=1., delta=1.55, c=100., vdisptype=1):
         self.rCM = rCM                      # Position (km) of center of mass
         self.vCM = vCM                      # Velocity (km/s) of center of mass
         self.mass = mass                    # Axion minicluster mass (10^{-10} M_Sun)
         self.delta = delta                  # Parameter delta for NFW profile
         self.c = c                          # Concentration for NFW profile
+        self.vdisptype = vdisptype          # Type of velocity dispersion curve: 0 is no dispersion, 1 is Maxwell-Boltzmann
 
     def rho_s(self) -> float:    # In units of 10^{-10}*M_Sun/km^3
         return 140*(1 + self.delta)*self.delta**3*rho_eq
@@ -68,10 +70,6 @@ class AxionMiniclusterNFW:
     
     # Velocity dispersion for many positions inside the minicluster
     def vsdisp(self, positions: np.ndarray) -> np.ndarray:
-        drawn_vs = np.empty((len(positions), 3))
         for ii in range(len(positions)):
             drawn_v = self.vdisp(positions[ii])
-            for jj in range(3):
-                drawn_vs[ii, jj] = drawn_v[jj]
-                
-        return drawn_vs
+            yield drawn_v

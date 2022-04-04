@@ -26,6 +26,18 @@ def rm_inds(arr: np.ndarray, inds: np.ndarray) -> np.ndarray:
             
     return new_arr[:-rmvd]
 
+# Heaviside function
+@njit
+def heav(v: np.ndarray) -> np.ndarray:
+    bools = np.empty_like(v)
+    for ii in range(len(v)):
+        if v[ii] > 0:
+            bools[ii] = 1.
+        else:
+            bools[ii] = 0.
+            
+    return bools
+
 # Method to draw uniformly distributed points along the unit sphere (Marsaglia 1972)
 @njit
 def randdir() -> np.ndarray:
@@ -51,14 +63,14 @@ def randdirs(n: int) -> np.ndarray:
         
     return dirs
 
-# Heaviside function
 @njit
-def heav(v: np.ndarray) -> np.ndarray:
-    bools = np.empty_like(v)
-    for ii in range(len(v)):
-        if v[ii] > 0:
-            bools[ii] = 1.
-        else:
-            bools[ii] = 0.
-            
-    return bools
+def randinsphere() -> np.ndarray:
+    found = False
+    while not found:
+        x, y, z = np.random.uniform(-1., 1., 3)
+        xnorm = x**2 + y**2 + z**2
+        
+        if xnorm < 1:
+            found = True
+
+    return np.array([x, y, z])

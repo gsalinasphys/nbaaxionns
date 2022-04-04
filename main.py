@@ -3,8 +3,8 @@ import time
 import numpy as np
 
 from classes import AxionMiniclusterNFW, NeutronStar, Particles
-from scripts import (energy, grav_en, mag, min_approach, randdir, randdirs,
-                     rm_far, rm_inds, trajs, update_ps)
+from scripts import (draw_rs, energy, grav_en, mag, min_approach, randdir,
+                     randdirs, randinsphere, rm_far, rm_inds, trajs, update_ps)
 
 
 def main() -> None:
@@ -17,8 +17,7 @@ def main() -> None:
     
     MC = AxionMiniclusterNFW(np.array(r_in), np.array(v_in))
     
-    pos = np.array(r_in) + np.array([10000., 1., 1.])
-    print(MC.vsdisp(np.array([pos]*10000)))
+    draw_rs(MC, 100)
             
     end = time.perf_counter()
 
