@@ -1,7 +1,7 @@
 import numpy as np
 from numba import float64  # import the types
 from numba.experimental import jitclass
-from scripts import G, mag, nums_vs
+from scripts import G, heav, mag, nums_vs
 
 spec = [
     ('mass', float64),
@@ -24,31 +24,15 @@ class NeutronStar:
         self.B0 = B0                # Magnetic field at the surface (10^14 G)
         self.misalign = misalign    # Misalignement angle
         self.psi0 = psi0            # Initial azimuthal angle
-
+    
     # Neutron star's gravitational field (km/s^2) at given positions
     def grav_field(self, positions: np.ndarray) -> np.ndarray:
-        gs = np.empty_like(positions)
-        distances = mag(positions)
+        ds = mag(positions)
+        out = ds > self.radius
+        return -G*self.mass*nums_vs(heav(out)/ds**3, positions) - G*self.mass/self.radius**3*nums_vs(heav(np.logical_not(out)), positions)
 
-        out = distances > self.radius
-        for ii in range(len(positions)):
-            if out[ii]:
-                gs[ii] = -G*self.mass*nums_vs(1/distances[ii]**3, positions[ii])
-            else:
-                gs[ii] = -G*self.mass/self.radius**3*positions[ii]
-
-        return gs
-
-    # Neutron star's gravitational potential (km/s)^2 at given positions
-    def grav_potential(self, positions: np.ndarray) -> np.ndarray:
-        distances = mag(positions)
-        Vs = np.empty_like(distances)
-
-        out = distances > self.radius
-        for ii in range(len(positions)):
-            if out[ii]:
-                Vs[ii] = -G*self.mass/distances[ii]
-            else:
-                Vs[ii] = -G*self.mass*((self.radius**2-distances[ii]**2)/(2*self.radius**3)+1/self.radius)
-
-        return Vs
+   # Find the gravitational potential produced by the neutron star at some position in (km/s)^2
+    def grav_pot(self, positions):
+        ds = mag(positions)
+        out = ds > self.radius
+        return -G*self.mass*heav(out)/ds - G*self.mass*((self.radius**2 - ds**2)/(2*self.radius**3) + 1/self.radius)*heav(np.logical_not(out)) 
