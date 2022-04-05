@@ -15,7 +15,7 @@ spec = [
 
 @jitclass(spec)
 class AxionMiniclusterNFW:
-    def __init__(self, rCM, vCM, mass=1., delta=1.55, c=100., vdisptype=1):
+    def __init__(self, rCM=np.array([0., 0., 0.,]), vCM=np.array([0., 0., 0.,]), mass=1., delta=1.55, c=100., vdisptype=1):
         self.rCM = rCM                      # Position (km) of center of mass
         self.vCM = vCM                      # Velocity (km/s) of center of mass
         self.mass = mass                    # Axion minicluster mass (10^{-10} M_Sun)
