@@ -1,7 +1,8 @@
 import numpy as np
 from numba import float64  # import the types
 from numba.experimental import jitclass
-from scripts import axionmass, mag, nums_vs, rm_inds
+from scripts.basic import mag, nums_vs, rm_inds
+from scripts.globals import ma
 
 spec = [
     ('positions', float64[:,:]),
@@ -20,7 +21,7 @@ class Particles:
 
     # Kinetic energies (10^{-5}eV*(km/s)^2)
     def kin_en(self) -> np.ndarray:
-        return 0.5 * axionmass * np.sum(np.square(self.velocities), axis=1)
+        return 0.5 * ma * np.sum(np.square(self.velocities), axis=1)
 
     # Angular momenta (km^2/s)
     def ang_momentum(self) -> np.ndarray:

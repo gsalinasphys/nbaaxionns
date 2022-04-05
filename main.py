@@ -1,26 +1,32 @@
 import time
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 from classes import AxionMiniclusterNFW, NeutronStar, Particles
-from scripts import (draw_rs, energy, grav_en, mag, min_approach, randdir,
-                     randdirs, randinsphere, rm_far, rm_inds, trajs, update_ps)
+from scripts import (energy, grav_en, mag, metropolis, min_approach, randdir,
+                     randdirs, rc, rdistr, rm_far, rm_inds, trajs,
+                     update_ps)
 
 
 def main() -> None:
-    start = time.perf_counter()
 
     r_in, v_in = [6e3, 1e14, 0], [0, -200., 0]
-    p = Particles(np.array([r_in]*100), np.array([v_in]*100))
-    
+    nps = 10
+    # MC = AxionMiniclusterNFW(np.array(r_in), np.array(v_in))
+        
     NS = NeutronStar()
     
-    MC = AxionMiniclusterNFW(np.array(r_in), np.array(v_in))
+    # samples = list(metropolis(MC, rdistr, 1_000_000))
+    # plt.hist(np.abs(samples), bins=np.linspace(0,0.2,1000))
+    # plt.show()
     
-    draw_rs(MC, 100)
-            
+    start = time.perf_counter()
+    
+    p = Particles(np.array([r_in]*nps), np.array([v_in]*nps))
+    trajs(p, NS, [10,100], 'test')
+    
     end = time.perf_counter()
-
     print("Run time: ", np.round(end - start, 2))
 
 if __name__ == '__main__':

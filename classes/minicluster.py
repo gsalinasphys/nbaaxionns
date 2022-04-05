@@ -1,7 +1,7 @@
 import numpy as np
 from numba import float64, int8  # import the types
 from numba.experimental import jitclass
-from scripts.basic import heav, mag, randinsphere
+from scripts.basic import heav, mag
 from scripts.globals import G, rho_eq
 
 spec = [
@@ -23,30 +23,49 @@ class AxionMiniclusterNFW:
         self.c = c                          # Concentration for NFW profile
         self.vdisptype = vdisptype          # Type of velocity dispersion curve: 0 is no dispersion, 1 is Maxwell-Boltzmann
 
-    def rho_s(self) -> float:    # In units of 10^{-10}*M_Sun/km^3
-        return 140*(1 + self.delta)*self.delta**3*rho_eq
+    def rho_s(self) -> float:    # In 10^{-10}*M_Sun/km^3
+        return 140*(1 + self.delta)*np.power(self.delta, 3)*rho_eq
 
     def rs(self) -> float:   # In km
         f_NFW = np.log(1 + self.c) - self.c/(1 + self.c)
-        return (self.mass/(4*np.pi*self.rho_s()*f_NFW))**(1/3)
+        return (self.mass/(4*np.pi*self.rho_s()*f_NFW)) ** (1/3)
 
     def rtrunc(self) -> float:
         return self.c*self.rs()
 
     def rho_prf(self, positions: np.ndarray) -> np.ndarray:   # In units of 10^{-10}*M_Sun/km^3
-        rstoCM = positions - self.rCM
-        ds = mag(rstoCM)
-        return self.rho_s()/(ds/self.rs()*(1 + ds/self.rs())**2)*heav(self.rtrunc() - ds)
+        if isinstance(positions, float):
+            d = positions - self.rCM
+            return self.rho_s()/(d/self.rs()*(1 + d/self.rs())**2)*heav(self.rtrunc() - d, 1.)
+        elif positions.ndim == 1:
+            d = mag(positions - self.rCM)
+            return self.rho_s()/(d/self.rs()*(1 + d/self.rs())**2)*heav(self.rtrunc() - d, 1.)
+        ds = mag(positions - self.rCM)
+         
+        return self.rho_s()/(ds/self.rs()*(1 + ds/self.rs())**2)*heav(self.rtrunc() - ds, 1.)
 
     def grav_pot(self, positions: np.ndarray) -> np.ndarray:   # In units of (km/s)^2
-        rstoCM = positions - self.rCM
-        ds = mag(rstoCM)
+        if isinstance(positions, float):
+            d = positions - self.rCM
+            return -4e-10*np.pi*G*self.rho_s()*self.rs()**3/d*np.log((d + self.rs())/self.rs())
+        elif positions.ndim == 1:
+            d = mag(positions - self.rCM)
+            return -4e-10*np.pi*G*self.rho_s()*self.rs()**3/d*np.log((d + self.rs())/self.rs())
+        ds = mag(positions - self.rCM)
+        
         return -4e-10*np.pi*G*self.rho_s()*self.rs()**3/ds*np.log((ds + self.rs())/self.rs())
-
-    # Enclosed mass from a given position, in units of 10^{-10} solar masses
+    
+    # Enclosed mass from a given position, in units of 10^{-10} M_Sun
     def encl_mass(self, positions: np.ndarray) -> np.ndarray:
-        rstoCM = positions - self.rCM
-        return 4*np.pi*self.rho_s()*self.rs()**3*(np.log((mag(rstoCM) + self.rs())/self.rs()) - mag(rstoCM)/(mag(rstoCM) + self.rs()))
+        if isinstance(positions, float):
+            d = positions - self.rCM
+            return 4*np.pi*self.rho_s()*self.rs()**3*(np.log((d + self.rs())/self.rs()) - d/(d + self.rs()))*heav(self.rtrunc() - d, 0.) + self.mass*heav(-self.rtrunc() + d, 1.)
+        elif positions.ndim == 1:
+            d = mag(positions - self.rCM)
+            return 4*np.pi*self.rho_s()*self.rs()**3*(np.log((d + self.rs())/self.rs()) - d/(d + self.rs()))*heav(self.rtrunc() - d, 0.) + self.mass*heav(-self.rtrunc() + d, 1.)
+        ds = mag(positions - self.rCM)
+        
+        return 4*np.pi*self.rho_s()*self.rs()**3*(np.log((ds + self.rs())/self.rs()) - ds/(ds + self.rs()))*heav(self.rtrunc() - ds, 0.) + self.mass*heav(-self.rtrunc() + ds, 1.)
 
     # Escape velocity in km/s
     def v_esc(self, position: np.ndarray) -> float:
@@ -61,10 +80,11 @@ class AxionMiniclusterNFW:
     def vdisp(self, position: np.ndarray) -> np.ndarray:
         found = False
         while not found:
-            v_esc, v_circ = self.v_esc(position), self.v_circ(position)
-            v_try = np.random.normal(0, v_circ, 3)
-            if mag(v_try) < v_esc:
-                found = True
+            if self.vdisptype == 1: # Maxwell-Boltzmann
+                v_esc, v_circ = self.v_esc(position), self.v_circ(position)
+                v_try = np.random.normal(0, v_circ, 3)
+                if mag(v_try) < v_esc:
+                    found = True
             
         return v_try
     
