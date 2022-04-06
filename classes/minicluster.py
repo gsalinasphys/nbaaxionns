@@ -1,7 +1,7 @@
 import numpy as np
 from numba import float64, int8  # import the types
 from numba.experimental import jitclass
-from scripts.basic import heav, mag
+from scripts.basic import heav, mag, randdir
 from scripts.globals import G, rho_eq
 
 spec = [
@@ -35,7 +35,7 @@ class AxionMiniclusterNFW:
 
     def rho_prf(self, positions: np.ndarray) -> np.ndarray:   # In units of 10^{-10}*M_Sun/km^3
         if isinstance(positions, float):
-            d = positions
+            d = positions   # Assumes the clump is at the origin
             return self.rho_s()/(d/self.rs()*(1 + d/self.rs())**2)*heav(self.rtrunc() - d, 1.)
         elif positions.ndim == 1:
             d = mag(positions - self.rCM)
@@ -46,7 +46,7 @@ class AxionMiniclusterNFW:
 
     def grav_pot(self, positions: np.ndarray) -> np.ndarray:   # In units of (km/s)^2
         if isinstance(positions, float):
-            d = positions
+            d = positions   # Assumes the clump is at the origin
             return -4e-10*np.pi*G*self.rho_s()*self.rs()**3/d*np.log((d + self.rs())/self.rs())
         elif positions.ndim == 1:
             d = mag(positions - self.rCM)
@@ -58,7 +58,7 @@ class AxionMiniclusterNFW:
     # Enclosed mass from a given position, in units of 10^{-10} M_Sun
     def encl_mass(self, positions: np.ndarray) -> np.ndarray:
         if isinstance(positions, float):
-            d = positions
+            d = positions   # Assumes the clump is at the origin
             return 4*np.pi*self.rho_s()*self.rs()**3*(np.log((d + self.rs())/self.rs()) - d/(d + self.rs()))*heav(self.rtrunc() - d, 0.) + self.mass*heav(-self.rtrunc() + d, 1.)
         elif positions.ndim == 1:
             d = mag(positions - self.rCM)
@@ -68,11 +68,11 @@ class AxionMiniclusterNFW:
         return 4*np.pi*self.rho_s()*self.rs()**3*(np.log((ds + self.rs())/self.rs()) - ds/(ds + self.rs()))*heav(self.rtrunc() - ds, 0.) + self.mass*heav(-self.rtrunc() + ds, 1.)
 
     # Escape velocity in km/s
-    def v_esc(self, position: np.ndarray) -> float:
+    def vesc(self, position: np.ndarray) -> float:
         return np.sqrt(np.abs(2*self.grav_pot(position)))
 
     # Circular velocity in km/s
-    def v_circ(self, position: np.ndarray) -> float:
+    def vcirc(self, position: np.ndarray) -> float:
         rstoCM = position - self.rCM
         return 1e-5*np.sqrt(G*self.encl_mass(position)/mag(rstoCM))
 
@@ -81,12 +81,12 @@ class AxionMiniclusterNFW:
         found = False
         while not found:
             if self.vdisptype == 1: # Maxwell-Boltzmann
-                v_esc, v_circ = self.v_esc(position), self.v_circ(position)
-                v_try = np.random.normal(0, v_circ, 3)
-                if mag(v_try) < v_esc:
+                vesc, vcirc = self.vesc(position), self.vcirc(position)
+                v_try = np.random.normal(0, vcirc, 3)
+                if mag(v_try) < vesc:
                     found = True
             
-        return v_try
+        return v_try*randdir()
     
     # Velocity dispersion for many positions inside the minicluster
     def vsdisp(self, positions: np.ndarray) -> np.ndarray:

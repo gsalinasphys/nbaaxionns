@@ -1,8 +1,12 @@
+import itertools
+from typing import Tuple
+
+import matplotlib.pyplot as plt
 import numpy as np
 from numba import njit
 
 from scripts.basic import mag
-from scripts.globals import G, ma, outdir
+from scripts.globals import G, ma, outdir, yr
 
 
 # Gravitational energies (10^{-5}eV*(km/s)^2)
@@ -15,12 +19,17 @@ def grav_en(p: object, NS: object) -> np.ndarray:
 def energy(p: object, NS: object) -> np.ndarray:
     return p.kin_en() + grav_en(p, NS)
 
-# Distances of minimum approach for the particles
+# Calculated distances of minimum approach for the particles
 @njit
 def min_approach(p: object, NS: object) -> np.ndarray:
     energies, ang_momenta = energy(p, NS), mag(p.ang_momentum())
     rmins = -G*NS.mass*ma/(2*energies) + np.sign(energies)*0.5*np.sqrt((G*NS.mass*ma/energies)**2 + 2*ma*ang_momenta**2/energies)
     return rmins
+
+# Simulated distances of minimum approach for the particles, compare with above to test quality of orbits
+@njit
+def min_approach_sim(traj: np.ndarray) -> float:
+    return min(mag(traj.T[1:4].T))
 
 # Remove particles that are not gonna reach rmax
 @njit
@@ -45,11 +54,16 @@ def update_ps(p: object, NS: object, rprecision: float = 1e-3) -> None:
     p.accelerations = NS.grav_field(p.positions)
     # Update velocities again
     p.verlet(dts, False)
+    
+    # Reset clock every ten years
+    period = 10.*yr
+    if np.any(p.times > period):
+        p.times -= period
 
     p.times += dts
     
 # Full trajectories, use batches of 100 particles for max speed
-def trajs(p: object, NS: object, rlimits: np.ndarray = None, fname: str = None, rprecision: float = 1e-3) -> None:
+def trajs(p: object, NS: object, rlimits: Tuple = None, fname: str = None, retval: bool = False, rprecision: float = 1e-2) -> None:
     finished = False
     
     data = [[] for i in range(8)]
@@ -75,3 +89,33 @@ def trajs(p: object, NS: object, rlimits: np.ndarray = None, fname: str = None, 
     
     if fname is not None:
         np.save(outdir + fname, data)
+        
+    if retval:
+        return data
+
+# Slice into single trajectories
+def single_trajs(trajs: np.ndarray) -> np.ndarray:
+    key = lambda x: x[0]
+    for data in itertools.groupby(trajs, key):
+        yield np.array(list(data[1]))[:, 1:]   # Remove slicing to get tags for the particles
+
+# Time order trajectories
+def torder(traj: np.ndarray) -> None:
+    return traj[traj[:, 0].argsort()]
+        
+# Plot trajectories
+def plot_trajs(trajs: np.ndarray, NS: object, fname: str = None, show: bool = False) -> None:
+    ax = plt.axes()
+    ax.set_aspect('equal')
+
+    for traj in trajs:
+        ax.scatter(traj.T[2], traj.T[1], s = 1e-2)
+
+    plt.xlabel('$y$ (km)')
+    plt.ylabel('$x$ (km)')
+    
+    if fname is not None:
+        plt.savefig(fname, bbox_inches='tight', dpi=300)
+    
+    if show:
+        plt.show()

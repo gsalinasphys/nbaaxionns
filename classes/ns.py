@@ -28,12 +28,26 @@ class NeutronStar:
         self.psi0 = psi0            # Initial azimuthal angle
     
     # Neutron star's gravitational field (km/s^2) at given positions
-    def grav_field(self, positions: np.ndarray) -> np.ndarray:
+    def grav_field(self, positions: np.ndarray) -> np.ndarray: 
+        if isinstance(positions, float):
+            d = positions   # Assumes the neutron star is at the origin
+            return -G*self.mass*heav(d - self.radius, 1.)/d**2 - G*self.mass*d/self.radius**3*heav(-d + self.radius, 0.)
+        elif positions.ndim == 1:
+            d = mag(positions)
+            return -G*self.mass*heav(d - self.radius, 1.)/d**3*positions - G*self.mass/self.radius**3*heav(-d + self.radius, 0.)*positions
+
         ds = mag(positions)
         return -G*self.mass*nums_vs(heav(ds - self.radius, 1.)/ds**3, positions) - G*self.mass/self.radius**3*nums_vs(heav(-ds + self.radius, 0.), positions)
 
    # Find the gravitational potential produced by the neutron star at some position in (km/s)^2
     def grav_pot(self, positions: np.ndarray) -> np.ndarray:
+        if isinstance(positions, float):
+            d = positions   # Assumes the neutron star is at the origin
+            return -G*self.mass*heav(d - self.radius, 1.)/d - G*self.mass*((self.radius**2 - d**2)/(2*self.radius**3) + 1/self.radius)*heav(-d + self.radius, 0.)
+        elif positions.ndim == 1:
+            d = mag(positions)
+            return -G*self.mass*heav(d - self.radius, 1.)/d - G*self.mass*((self.radius**2 - d**2)/(2*self.radius**3) + 1/self.radius)*heav(-d + self.radius, 0.)
+        
         ds = mag(positions)
         return -G*self.mass*heav(ds - self.radius, 1.)/ds - G*self.mass*((self.radius**2 - ds**2)/(2*self.radius**3) + 1/self.radius)*heav(-ds + self.radius, 0.) 
 

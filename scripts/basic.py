@@ -1,6 +1,15 @@
+from typing import Generator
+
 import numpy as np
 from numba import njit
 
+
+@njit
+def repeat(v: np.ndarray, n: int) -> np.ndarray:
+    nvs = np.empty((n, len(v)))
+    for ii in range(n):
+        nvs[ii] = v
+    return nvs
 
 # Magnitude of vectors
 @njit
@@ -74,6 +83,6 @@ def randdir() -> np.ndarray:
     return np.array([nx, ny, nz])
 
 @njit(fastmath=True)
-def randdirs(n: int) -> np.ndarray:
+def randdirs(n: int) -> Generator:
     for ii in range(n):
         yield randdir()
