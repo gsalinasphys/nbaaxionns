@@ -18,11 +18,10 @@ def proposal(x: float, sigma: float = 0.01) -> float:
     return np.random.normal(x, sigma)
 
 @njit
-def metropolis(AC: object, pdistr: Callable, n: int, proposal: Callable = proposal) -> Generator:
-    x = 0.1 # start somewhere
-
+def metropolis(AC: object, pdistr: Callable, n: int, x0: float = 0.1, sigma: float = 0.01) -> Generator:
+    x = x0 # start somewhere
     for _ in range(n):
-        trial = proposal(x) # random neighbour from the proposal distribution
+        trial = proposal(x, sigma=sigma) # random neighbour from the proposal distribution
         acceptance = pdistr(AC, trial)/pdistr(AC, x)[0]
         
         # accept the move conditionally

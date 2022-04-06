@@ -73,10 +73,7 @@ def randdir() -> np.ndarray:
 
     return np.array([nx, ny, nz])
 
-@njit 
+@njit(fastmath=True)
 def randdirs(n: int) -> np.ndarray:
-    dirs = np.empty((n, 3))
     for ii in range(n):
-        dirs[ii] = randdir()
-        
-    return dirs
+        yield randdir()

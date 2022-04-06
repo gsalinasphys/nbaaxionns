@@ -50,10 +50,13 @@ def update_ps(p: object, NS: object, rprecision: float = 1e-3) -> None:
 
 # Full trajectories, use batches of 100 particles for max speed
 def trajs(p: object, NS: object, rlimits: np.ndarray = None, fname: str = None, rprecision: float = 1e-3) -> None:
-    rmax = max(mag(p.positions))
+    finished = False
     
     data = [[] for i in range(8)]
-    while max(mag(p.positions)) <= rmax:
+    while not finished or min(mag(p.positions)) < rlimits[1]:
+        if min(mag(p.positions)) < rlimits[1]:
+            finished = True
+            
         ps_in = np.where(np.logical_and(mag(p.positions) > rlimits[0], mag(p.positions) < rlimits[1]))[0]
         # Save in the format [tags, times, rx, ry, rz, vx, vy, vz]
         data[0].extend(ps_in)

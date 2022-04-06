@@ -9,6 +9,6 @@ rho_eq = 5.46e-28       # Energy density at MR equality in 10^{-10}*M_Sun/km^3
 
 
 if local_run:
-    outdir = '/home/gsalinas/Dropbox/output/axionns/'
+    outdir = '/home/gsalinas/Dropbox/output/nbaaxionns/'
 else:
     outdir = '/cfs/data/guvi3498/'

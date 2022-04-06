@@ -35,7 +35,7 @@ class AxionMiniclusterNFW:
 
     def rho_prf(self, positions: np.ndarray) -> np.ndarray:   # In units of 10^{-10}*M_Sun/km^3
         if isinstance(positions, float):
-            d = positions - self.rCM
+            d = positions
             return self.rho_s()/(d/self.rs()*(1 + d/self.rs())**2)*heav(self.rtrunc() - d, 1.)
         elif positions.ndim == 1:
             d = mag(positions - self.rCM)
@@ -46,7 +46,7 @@ class AxionMiniclusterNFW:
 
     def grav_pot(self, positions: np.ndarray) -> np.ndarray:   # In units of (km/s)^2
         if isinstance(positions, float):
-            d = positions - self.rCM
+            d = positions
             return -4e-10*np.pi*G*self.rho_s()*self.rs()**3/d*np.log((d + self.rs())/self.rs())
         elif positions.ndim == 1:
             d = mag(positions - self.rCM)
@@ -58,7 +58,7 @@ class AxionMiniclusterNFW:
     # Enclosed mass from a given position, in units of 10^{-10} M_Sun
     def encl_mass(self, positions: np.ndarray) -> np.ndarray:
         if isinstance(positions, float):
-            d = positions - self.rCM
+            d = positions
             return 4*np.pi*self.rho_s()*self.rs()**3*(np.log((d + self.rs())/self.rs()) - d/(d + self.rs()))*heav(self.rtrunc() - d, 0.) + self.mass*heav(-self.rtrunc() + d, 1.)
         elif positions.ndim == 1:
             d = mag(positions - self.rCM)
@@ -91,5 +91,4 @@ class AxionMiniclusterNFW:
     # Velocity dispersion for many positions inside the minicluster
     def vsdisp(self, positions: np.ndarray) -> np.ndarray:
         for ii in range(len(positions)):
-            drawn_v = self.vdisp(positions[ii])
-            yield drawn_v
+            yield self.vdisp(positions[ii])
