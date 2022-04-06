@@ -5,14 +5,16 @@ import numpy as np
 
 from classes import AxionMiniclusterNFW, NeutronStar, Particles
 from scripts import (energy, grav_en, mag, metropolis, min_approach, randdir,
-                     randdirs, rc, rdistr, rm_far, rm_inds, trajs, update_ps)
+                     randdirs, rc, rdistr, rm_far, rm_inds, trajAC, trajs,
+                     update_ps)
 
 
 def main() -> None:
 
     r_in, v_in = [6e3, 1e14, 0], [0, -200., 0]
     nps = 100
-    # MC = AxionMiniclusterNFW(np.array(r_in), np.array(v_in))
+    MC = AxionMiniclusterNFW(np.array(r_in), np.array(v_in))
+    pMC = Particles(MC.rCM.reshape((1,3)), MC.vCM.reshape((1,3)))
         
     NS = NeutronStar()
     
@@ -22,8 +24,10 @@ def main() -> None:
     
     start = time.perf_counter()
     
-    p = Particles(np.array([r_in]*nps), np.array([v_in]*nps))
-    trajs(p, NS, (10,100), 'test')
+    print(trajAC(pMC, NS, 100.))
+    
+    # p = Particles(np.array([r_in]*nps), np.array([v_in]*nps))
+    # trajs(p, NS, (10,100), 'test')
     
     end = time.perf_counter()
     print("Run time: ", np.round(end - start, 2))

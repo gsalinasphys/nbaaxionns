@@ -11,7 +11,7 @@ def mag(vs: np.ndarray) -> np.ndarray:
     return np.sqrt(np.sum(vs**2, axis = 1))
 
 @njit
-def mydot(v1, v2):
+def mydot(v1: np.ndarray, v2: np.ndarray) -> float:
     prods = np.empty_like(v1)
     for ii in range(len(v1)):
         prods[ii] = v1[ii]*v2[ii]

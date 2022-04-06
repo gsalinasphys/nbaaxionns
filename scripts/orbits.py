@@ -47,7 +47,7 @@ def update_ps(p: object, NS: object, rprecision: float = 1e-3) -> None:
     p.verlet(dts, False)
 
     p.times += dts
-
+    
 # Full trajectories, use batches of 100 particles for max speed
 def trajs(p: object, NS: object, rlimits: np.ndarray = None, fname: str = None, rprecision: float = 1e-3) -> None:
     finished = False
@@ -73,4 +73,5 @@ def trajs(p: object, NS: object, rlimits: np.ndarray = None, fname: str = None, 
     data = np.array(data).T
     data = data[data[:, 0].argsort()]
     
-    np.save(outdir + fname, data)
+    if fname is not None:
+        np.save(outdir + fname, data)

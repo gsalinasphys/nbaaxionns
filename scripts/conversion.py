@@ -1,3 +1,5 @@
+from typing import Generator
+
 import numpy as np
 from numba import njit
 from scipy.optimize import root_scalar
@@ -6,7 +8,7 @@ from scripts.basic import mag, randdirs
 from scripts.globals import ma, maGHz
 
 
-def rc(NS, position, time, exact=False):    # Estimated conversion radius in some direction
+def rc(NS: object, position: np.ndarray, time: float, exact: bool = False) -> float:    # Estimated conversion radius in some direction
     dir = position/mag(position)
     if not exact:
         def to_min(x):
@@ -19,7 +21,7 @@ def rc(NS, position, time, exact=False):    # Estimated conversion radius in som
     except ValueError:
         return None
 
-def conv_surf(NS, time, nsamples=10_000, exact=False):    
+def conv_surf(NS: object, time: float, nsamples: int = 10_000, exact: bool = False) -> Generator:    
     for dir in randdirs(nsamples):
         rcii = rc(NS, dir, time, exact=exact)
         if rcii is not None:

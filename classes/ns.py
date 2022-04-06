@@ -33,22 +33,22 @@ class NeutronStar:
         return -G*self.mass*nums_vs(heav(ds - self.radius, 1.)/ds**3, positions) - G*self.mass/self.radius**3*nums_vs(heav(-ds + self.radius, 0.), positions)
 
    # Find the gravitational potential produced by the neutron star at some position in (km/s)^2
-    def grav_pot(self, positions):
+    def grav_pot(self, positions: np.ndarray) -> np.ndarray:
         ds = mag(positions)
         return -G*self.mass*heav(ds - self.radius, 1.)/ds - G*self.mass*((self.radius**2 - ds**2)/(2*self.radius**3) + 1/self.radius)*heav(-ds + self.radius, 0.) 
 
     # Magnetic dipole with magnitude in units of (10^14 G)*km^3
-    def m(self, time):
+    def m(self, time: float) -> np.ndarray:
         psi = self.psi0 + 2*np.pi/self.T*time
         return 0.5*self.B0*self.radius**3*np.array([np.sin(self.misalign)*np.sin(psi), np.sin(self.misalign)*np.cos(psi), np.cos(self.misalign)])
 
-    def B(self, position, time):   # In units of 10^14 Gauss, just the dipole contribution
+    def B(self, position: np.ndarray, time: float) -> np.ndarray:   # In units of 10^14 Gauss, just the dipole contribution
         d = mag(position)
         return 3*mydot(position, self.m(time))/d**5*position - self.m(time)/d**3
 
-    def wp(self, position, time):  # Plasma frequency in GHz
+    def wp(self, position: np.ndarray, time: float) -> float:  # Plasma frequency in GHz
         return 1.5e2*np.sqrt(np.abs(mydot(self.B(position, time), self.axis))/self.T)
     
-    def rcmax(self):
+    def rcmax(self) -> float:
         return 28.231 * self.radius * (self.B0/(self.T*maGHz**2))**(1/3)
 
