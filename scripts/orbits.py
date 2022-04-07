@@ -3,7 +3,7 @@ from typing import Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
-from numba import njit
+from numba import jit, njit
 
 from scripts.basic import mag
 from scripts.globals import G, ma, outdir, yr
@@ -22,24 +22,41 @@ def energy(p: object, NS: object) -> np.ndarray:
 # Calculated distances of minimum approach for the particles
 @njit
 def min_approach(p: object, NS: object) -> np.ndarray:
-    energies, ang_momenta = energy(p, NS), mag(p.ang_momentum())
-    rmins = -G*NS.mass*ma/(2*energies) + np.sign(energies)*0.5*np.sqrt((G*NS.mass*ma/energies)**2 + 2*ma*ang_momenta**2/energies)
-    return rmins
+    # energies, ang_momenta = energy(p, NS), mag(p.ang_momentum())
+    # rmins = -G*NS.mass*ma/(2*energies) + 0.5*np.sqrt((G*NS.mass*ma/energies)**2 + 2*ma*ang_momenta**2/energies)
+    # return rmins
+    return -G*NS.mass*ma/(2*energy(p, NS)) + 0.5*np.sqrt((G*NS.mass*ma/energy(p, NS))**2 + 2*ma*mag(p.ang_momentum())**2/energy(p, NS))
+    
 
 # Simulated distances of minimum approach for the particles, compare with above to test quality of orbits
 @njit
 def min_approach_sim(traj: np.ndarray) -> float:
     return min(mag(traj.T[1:4].T))
 
+# Add particles given their positions, velocities, accelerations and times
+def add_ps(p: object, positions: np.ndarray, velocities: np.ndarray, accelerations: np.ndarray, times: np.ndarray) -> None:
+    if not p.positions.size:
+        p.positions, p.velocities, p.accelerations, p.times = positions, velocities, accelerations, times
+    else:
+        p.positions = np.append(p.positions, positions, axis=0)
+        p.velocities = np.append(p.velocities, velocities, axis=0)
+        p.accelerations = np.append(p.accelerations, accelerations, axis=0)
+        p.times = np.append(p.times, times)
+
+# Remove particles by their indices
+def rm_ps(p: object, inds: int) -> None:
+    p.positions = np.delete(p.positions, inds, axis=0)
+    p.velocities = np.delete(p.velocities, inds, axis=0)
+    p.accelerations = np.delete(p.accelerations, inds, axis=0)
+    p.times = np.delete(p.times, inds)
+
 # Remove particles that are not gonna reach rmax
-@njit
 def rm_far(p: object, NS: object, rmax: float) -> None:
-    indices = np.where(min_approach(p, NS) > rmax)[0]
-    p.rm_ps(indices)
+    rm_ps(p, np.where(min_approach(p, NS) > rmax))
 
 # Implementation of Verlet's method to update position and velocity (for reference, see Velocity Verlet in https://en.m.wikipedia.org/wiki/Verlet_integration)
 @njit
-def update_ps(p: object, NS: object, rprecision: float = 1e-3) -> None:
+def update_ps(p: object, NS: object, rprecision: float = 1e-2) -> None:
     # Update accelerations
     p.accelerations = NS.grav_field(p.positions)
 
@@ -62,7 +79,7 @@ def update_ps(p: object, NS: object, rprecision: float = 1e-3) -> None:
 
     p.times += dts
     
-# Full trajectories, use batches of 100 particles for max speed
+# Full trajectories, use batches of 160 particles for max speed (maybe in general 10ncores?)
 def trajs(p: object, NS: object, rlimits: Tuple = None, fname: str = None, retval: bool = False, rprecision: float = 1e-2) -> None:
     finished = False
     
@@ -102,17 +119,32 @@ def single_trajs(trajs: np.ndarray) -> np.ndarray:
 # Time order trajectories
 def torder(traj: np.ndarray) -> None:
     return traj[traj[:, 0].argsort()]
-        
+
+# Plot trajectories
+def plot_traj(traj: np.ndarray, show: bool = False) -> None:
+    ax = plt.axes()
+
+    ax.scatter(traj.T[2], traj.T[1], s=1)
+
+    plt.xlabel('$y$ (km)', fontsize=16)
+    plt.ylabel('$x$ (km)', fontsize=16)
+
+    if show:
+        plt.show()
+    
 # Plot trajectories
 def plot_trajs(trajs: np.ndarray, NS: object, fname: str = None, show: bool = False) -> None:
     ax = plt.axes()
     ax.set_aspect('equal')
 
     for traj in trajs:
-        ax.scatter(traj.T[2], traj.T[1], s = 1e-2)
+        ax.scatter(traj.T[2], traj.T[1], s=1e-2)
+        
+    circle = plt.Circle((0, 0), NS.radius, facecolor='purple', alpha = 0.5)
+    ax.add_patch(circle)
 
-    plt.xlabel('$y$ (km)')
-    plt.ylabel('$x$ (km)')
+    plt.xlabel('$y$ (km)', fontsize=16)
+    plt.ylabel('$x$ (km)', fontsize=16)
     
     if fname is not None:
         plt.savefig(fname, bbox_inches='tight', dpi=300)

@@ -34,6 +34,9 @@ def nums_vs(nums: np.ndarray, vs: np.ndarray) -> np.ndarray:
 
 @njit
 def rm_inds(arr: np.ndarray, inds: np.ndarray) -> np.ndarray:
+    if not inds.size:
+        return arr
+    
     new_arr, rmvd = np.empty_like(arr), 0
     for ii in range(len(arr)):
         if ii not in inds:

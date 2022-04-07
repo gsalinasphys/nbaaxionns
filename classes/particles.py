@@ -13,7 +13,7 @@ spec = [
 
 @jitclass(spec)
 class Particles:
-    def __init__(self, positions, velocities, acceleration=np.array([0., 0., 0.]), time=0.) -> None:
+    def __init__(self, positions, velocities, acceleration=np.zeros(3), time=0.) -> None:
         self.positions = positions      # km
         self.velocities = velocities    # km/s
         self.accelerations = repeat(acceleration, len(positions))     # km/s^2
@@ -38,23 +38,16 @@ class Particles:
         if first_update:
             self.positions += nums_vs(dts, self.velocities)
 
-    # Add particle given their position, velocity, acceleration and time
-    def add_p(self, position: np.ndarray, velocity: np.ndarray, acceleration: np.ndarray = np.array([0., 0., 0.]), time: np.ndarray = 0.) -> None:
-        if len(self.positions):
-            self.positions = np.append(self.positions, position.reshape((1,3)), axis=0)
-            self.velocities = np.append(self.velocities, velocity.reshape((1,3)), axis=0)
-            self.accelerations = np.append(self.accelerations, acceleration.reshape((1,3)), axis=0)
-            self.times = np.append(self.times, time)
-        else:
-            self.positions, self.velocities, self.accelerations = position.reshape((1,3)), velocity.reshape((1,3)), acceleration.reshape((1,3))   
+    # # Add particle given their position, velocity, acceleration and time
+    # def add_p(self, position: np.ndarray, velocity: np.ndarray, acceleration: np.ndarray = np.zeros(3), time: np.ndarray = 0.) -> None:
+    #     if len(self.positions):
+    #         self.positions = np.append(self.positions, position.reshape((1,3)), axis=0)
+    #         self.velocities = np.append(self.velocities, velocity.reshape((1,3)), axis=0)
+    #         self.accelerations = np.append(self.accelerations, acceleration.reshape((1,3)), axis=0)
+    #         self.times = np.append(self.times, time)
+    #     else:
+    #         self.positions, self.velocities, self.accelerations = position.reshape((1,3)), velocity.reshape((1,3)), acceleration.reshape((1,3))   
         
-    def add_ps(self, positions: np.ndarray, velocities: np.ndarray, accelerations: np.ndarray, times: np.ndarray) -> None:
-        for ii in range(len(positions)):
-            self.add_p(positions[ii], velocities[ii], accelerations[ii], times[ii])
-            
-    # Remove particles given their indices
-    def rm_ps(self, inds: np.ndarray) -> None:
-        self.positions = rm_inds(self.positions, inds)
-        self.velocities = rm_inds(self.velocities, inds)
-        self.accelerations = rm_inds(self.accelerations, inds)
-        self.times = rm_inds(self.times, inds)        
+    # def add_ps(self, positions: np.ndarray, velocities: np.ndarray, accelerations: np.ndarray, times: np.ndarray) -> None:
+    #     for ii in range(len(positions)):
+    #         self.add_p(positions[ii], velocities[ii], accelerations[ii], times[ii])

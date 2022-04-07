@@ -11,7 +11,7 @@ from scripts.globals import ma, maGHz
 def rc(NS: object, position: np.ndarray, time: float, exact: bool = False) -> float:    # Estimated conversion radius in some direction
     dir = position/mag(position)
     if not exact:
-        def to_min(x):
+        def to_min(x: float) -> float:
             return NS.wp(x*dir, time) - maGHz
         
     try:

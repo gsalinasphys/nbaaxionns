@@ -9,6 +9,6 @@ rho_eq = 5.46e-28               # Energy density at MR equality in 10^{-10}*M_Su
 yr = 3.154e7                    # Year in seconds
 
 if local_run:
-    outdir = '/home/gsalinas/Dropbox/output/nbaaxionns/'
+    outdir = 'output/'
 else:
     outdir = '/cfs/data/guvi3498/'

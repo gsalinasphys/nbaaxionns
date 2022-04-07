@@ -15,7 +15,7 @@ spec = [
 
 @jitclass(spec)
 class AxionMiniclusterNFW:
-    def __init__(self, rCM=np.array([0., 0., 0.,]), vCM=np.array([0., 0., 0.,]), mass=1., delta=1.55, c=100., vdisptype=1):
+    def __init__(self, rCM=np.zeros(3), vCM=np.zeros(3), mass=1., delta=1.55, c=100., vdisptype=1):
         self.rCM = rCM                      # Position (km) of center of mass
         self.vCM = vCM                      # Velocity (km/s) of center of mass
         self.mass = mass                    # Axion minicluster mass (10^{-10} M_Sun)
@@ -33,16 +33,16 @@ class AxionMiniclusterNFW:
     def rtrunc(self) -> float:
         return self.c*self.rs()
 
-    def rho_prf(self, positions: np.ndarray) -> np.ndarray:   # In units of 10^{-10}*M_Sun/km^3
+    def rho_prf(self, positions: np.ndarray, rbounds: tuple = (0., 1.)) -> np.ndarray:   # In units of 10^{-10}*M_Sun/km^3
         if isinstance(positions, float):
             d = positions   # Assumes the clump is at the origin
-            return self.rho_s()/(d/self.rs()*(1 + d/self.rs())**2)*heav(self.rtrunc() - d, 1.)
+            return self.rho_s() / (d/self.rs()*(1 + d/self.rs())**2) * (heav(rbounds[1]*self.rtrunc() - d, 1.) - heav(rbounds[0]*self.rtrunc() - d, 1.))
         elif positions.ndim == 1:
             d = mag(positions - self.rCM)
-            return self.rho_s()/(d/self.rs()*(1 + d/self.rs())**2)*heav(self.rtrunc() - d, 1.)
+            return self.rho_s() / (d/self.rs()*(1 + d/self.rs())**2) * (heav(rbounds[1]*self.rtrunc() - d, 1.) - heav(rbounds[0]*self.rtrunc() - d, 1.))
         ds = mag(positions - self.rCM)
          
-        return self.rho_s()/(ds/self.rs()*(1 + ds/self.rs())**2)*heav(self.rtrunc() - ds, 1.)
+        return self.rho_s() / (ds/self.rs()*(1 + ds/self.rs())**2) * (heav(rbounds[1]*self.rtrunc() - ds, 1.) - heav(rbounds[0]*self.rtrunc() - ds, 1.))
 
     def grav_pot(self, positions: np.ndarray) -> np.ndarray:   # In units of (km/s)^2
         if isinstance(positions, float):
