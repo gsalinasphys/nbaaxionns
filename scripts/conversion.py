@@ -4,7 +4,7 @@ import numpy as np
 from numba import njit
 from scipy.optimize import root_scalar
 
-from scripts.basic import mag, randdirs
+from scripts.basic import mag, randdirs3d
 from scripts.globals import ma, maGHz
 
 
@@ -22,7 +22,7 @@ def rc(NS: object, position: np.ndarray, time: float, exact: bool = False) -> fl
         return None
 
 def conv_surf(NS: object, time: float, nsamples: int = 10_000, exact: bool = False) -> Generator:    
-    for dir in randdirs(nsamples):
+    for dir in randdirs3d(nsamples):
         rcii = rc(NS, dir, time, exact=exact)
         if rcii is not None:
             yield rcii*dir

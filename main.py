@@ -6,8 +6,8 @@ import numpy as np
 
 from classes import AxionMiniclusterNFW, NeutronStar, Particles
 from scripts import (energy, grav_en, mag, metropolis, min_approach,
-                     plot_trajs, randdir, randdirs, rc, rdistr, repeat, rm_far,
-                     rm_inds, runtrajs, single_trajs, trajAC, trajs, truntrajs,
+                     plot_trajs, randdir3d, randdirs3d, rc, rdistr, repeat, rm_far,
+                     runtrajs, single_trajs, trajAC, trajs, truntrajs,
                      update_ps)
 
 

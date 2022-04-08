@@ -1,3 +1,5 @@
+from numba.experimental import jitclass
+
 local_run = True
 
 eV_GHz = 2.41812e5
@@ -12,3 +14,8 @@ if local_run:
     outdir = 'output/'
 else:
     outdir = '/cfs/data/guvi3498/'
+
+@jitclass
+class EmptyClass:
+    def __init__(self):
+        pass

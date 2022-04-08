@@ -1,7 +1,7 @@
 import numpy as np
 from numba import float64  # import the types
 from numba.experimental import jitclass
-from scripts.basic import mag, nums_vs, repeat, rm_inds
+from scripts.basic import mag, nums_vs, repeat
 from scripts.globals import ma
 
 spec = [

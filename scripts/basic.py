@@ -4,6 +4,7 @@ import numpy as np
 from numba import njit
 
 
+# Repeat a numpy array n times
 @njit
 def repeat(v: np.ndarray, n: int) -> np.ndarray:
     nvs = np.empty((n, len(v)))
@@ -19,6 +20,7 @@ def mag(vs: np.ndarray) -> np.ndarray:
     
     return np.sqrt(np.sum(vs**2, axis = 1))
 
+# Dot product, faster than Numpy's np.dot for smaller vectors
 @njit
 def mydot(v1: np.ndarray, v2: np.ndarray) -> float:
     prods = np.empty_like(v1)
@@ -31,20 +33,6 @@ def mydot(v1: np.ndarray, v2: np.ndarray) -> float:
 @njit
 def nums_vs(nums: np.ndarray, vs: np.ndarray) -> np.ndarray:
     return np.multiply(vs.T, nums).T 
-
-@njit
-def rm_inds(arr: np.ndarray, inds: np.ndarray) -> np.ndarray:
-    if not inds.size:
-        return arr
-    
-    new_arr, rmvd = np.empty_like(arr), 0
-    for ii in range(len(arr)):
-        if ii not in inds:
-            new_arr[ii-rmvd] = arr[ii]
-        else:
-            rmvd += 1
-            
-    return new_arr[:-rmvd]
     
 # Heaviside function
 @njit
@@ -68,9 +56,25 @@ def heav(v: np.ndarray, x0: float) -> np.ndarray:
             
     return bools
 
+# Step function componentwise
+@njit
+def step(v: np.ndarray, xbounds: tuple = (0., 1.)):
+    return heav(xbounds[1] - v, 1.) - heav(xbounds[0] - v, 0.)
+
+# Given cond>0 return outide else inside componentwise
+@njit
+def cases(cond: np.ndarray, inside: np.ndarray, outside: np.ndarray):
+    return inside*heav(-cond, 0.) + outside*heav(cond, 1.)
+
+# Random directions in 2d centered at and angle with spread delta
+@njit
+def randdirs2d(n: int, center: float = 0., delta: float = np.pi) -> np.ndarray:
+    thetas = np.random.uniform(center-delta, center+delta, n)
+    return np.vstack((np.cos(thetas), np.sin(thetas))).T
+
 # Method to draw uniformly distributed points along the unit sphere (Marsaglia 1972)
 @njit
-def randdir() -> np.ndarray:
+def randdir3d() -> np.ndarray:
     found = False
     while not found:
         x1, x2 = np.random.uniform(-1., 1., 2)
@@ -86,6 +90,6 @@ def randdir() -> np.ndarray:
     return np.array([nx, ny, nz])
 
 @njit(fastmath=True)
-def randdirs(n: int) -> Generator:
+def randdirs3d(n: int) -> Generator:
     for ii in range(n):
-        yield randdir()
+        yield randdir3d()

@@ -4,34 +4,52 @@ from typing import Callable, Generator
 import numpy as np
 from numba import njit
 
-from scripts.basic import randdir
+from scripts.basic import mag, randdir3d, step
+from scripts.globals import EmptyClass
 
 
 # Proposal function for Metropolis–Hastings algorithm, using here a gaussian with width sigma
 @njit
-def proposal(x: float, sigma: float = 0.01) -> float:
-    return np.random.normal(x, sigma)
+def proposal(x: float, sigma: float = 0.1) -> float:
+    if isinstance(x, float):
+        return np.random.normal(x, sigma)
+    
+    toret = np.empty_like(x)
+    for ii in range(len(x)):
+        toret[ii] = np.random.normal(x[ii], sigma[ii])
+        
+    return toret
 
 # Metropolis–Hastings algorithm for sampling from a probability distribution
 @njit
-def metropolis(AC: object, pdistr: Callable, n: int, x0: float = 0.1, sigma: float = 0.05, rbounds: tuple = (0., 1.)) -> Generator:
+def metropolis(pdistr: Callable, n: int, x0: float = 0.1, sigma: float = 0.1, xbounds: tuple = (0., 1.), O: object = EmptyClass()) -> Generator:
     x = x0 # start somewhere
     for _ in range(n):
         trial = proposal(x, sigma=sigma) # random neighbor from the proposal distribution
-        acceptance = pdistr(AC, trial, rbounds)/pdistr(AC, x, rbounds)[0]
+        acceptance = pdistr(trial, xbounds, O)/pdistr(x, xbounds, O)
         
         # accept the move conditionally
         if random.random() < acceptance:
             x = trial
 
-        yield AC.rtrunc() * x * randdir()
+        yield x
 
 # Radial probability distribution for an axion cluster
 @njit
-def rdistr(AC: object, x: float, rbounds: tuple = (0., 1.)) -> float:
-    r = np.empty((1,3))
-    r[0][0] = x
-    r[0][1], r[0][2] = 0., 0.
+def rdistr(r: float, rbounds: tuple = (0., 1.), AC: object = EmptyClass()) -> float:
+    return r**2 * AC.rho_prf(AC.rtrunc() * r, rbounds)
+
+# Step distribution for 2d and 3d (or any higher d), for 1d use step instead
+@njit
+def stepdistr(v: np.ndarray, xbounds: tuple = (0., 1.), O: object = EmptyClass()) -> float:
+    toret = 1.
+    for ii in range(len(v)):
+        toret = toret*step(v[ii], xbounds)
         
-    return x**2 * AC.rho_prf(AC.rCM + AC.rtrunc() * r, rbounds)
+    return toret
+
+# Step distribution for 2d and 3d (or any higher d), for 1d use step instead
+@njit
+def cyldistr(v: np.ndarray, xbounds: tuple = (0., 1.), O: object = EmptyClass()) -> float:
+    return step(mag(v*np.array([1., 0., 1.])), (0., 1.)) * step(v[1], xbounds)   # Axis of cylinder along yaxis
     

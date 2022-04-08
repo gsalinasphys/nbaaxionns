@@ -1,7 +1,7 @@
 import numpy as np
 from numba import float64, int8  # import the types
 from numba.experimental import jitclass
-from scripts.basic import heav, mag, randdir
+from scripts.basic import cases, heav, mag, randdir3d, step
 from scripts.globals import G, rho_eq
 
 spec = [
@@ -36,13 +36,17 @@ class AxionMiniclusterNFW:
     def rho_prf(self, positions: np.ndarray, rbounds: tuple = (0., 1.)) -> np.ndarray:   # In units of 10^{-10}*M_Sun/km^3
         if isinstance(positions, float):
             d = positions   # Assumes the clump is at the origin
-            return self.rho_s() / (d/self.rs()*(1 + d/self.rs())**2) * (heav(rbounds[1]*self.rtrunc() - d, 1.) - heav(rbounds[0]*self.rtrunc() - d, 1.))
+            return self.rho_s() / (d/self.rs()*(1 + d/self.rs())**2) * step(d/self.rtrunc(), rbounds)
         elif positions.ndim == 1:
             d = mag(positions - self.rCM)
-            return self.rho_s() / (d/self.rs()*(1 + d/self.rs())**2) * (heav(rbounds[1]*self.rtrunc() - d, 1.) - heav(rbounds[0]*self.rtrunc() - d, 1.))
-        ds = mag(positions - self.rCM)
-         
-        return self.rho_s() / (ds/self.rs()*(1 + ds/self.rs())**2) * (heav(rbounds[1]*self.rtrunc() - ds, 1.) - heav(rbounds[0]*self.rtrunc() - ds, 1.))
+            return self.rho_s() / (d/self.rs()*(1 + d/self.rs())**2) * step(d/self.rtrunc(), rbounds)
+        
+        ds = mag(positions - self.rCM) 
+        return self.rho_s() / (ds/self.rs()*(1 + ds/self.rs())**2) * step(ds/self.rtrunc(), rbounds)
+
+    # # Radial probability distribution for an axion cluster
+    # def rdistr(self, r: float, rbounds: tuple = (0., 1.)) -> float:
+    #     return r**2 * self.rho_prf(self.rtrunc() * r, rbounds)
 
     def grav_pot(self, positions: np.ndarray) -> np.ndarray:   # In units of (km/s)^2
         if isinstance(positions, float):
@@ -51,21 +55,27 @@ class AxionMiniclusterNFW:
         elif positions.ndim == 1:
             d = mag(positions - self.rCM)
             return -4e-10*np.pi*G*self.rho_s()*self.rs()**3/d*np.log((d + self.rs())/self.rs())
-        ds = mag(positions - self.rCM)
         
+        ds = mag(positions - self.rCM)
         return -4e-10*np.pi*G*self.rho_s()*self.rs()**3/ds*np.log((ds + self.rs())/self.rs())
     
     # Enclosed mass from a given position, in units of 10^{-10} M_Sun
     def encl_mass(self, positions: np.ndarray) -> np.ndarray:
         if isinstance(positions, float):
             d = positions   # Assumes the clump is at the origin
-            return 4*np.pi*self.rho_s()*self.rs()**3*(np.log((d + self.rs())/self.rs()) - d/(d + self.rs()))*heav(self.rtrunc() - d, 0.) + self.mass*heav(-self.rtrunc() + d, 1.)
+            return cases(d-self.rtrunc(),
+                        4*np.pi*self.rho_s()*self.rs()**3*(np.log((d + self.rs())/self.rs())-d/(d + self.rs())),
+                        self.mass)
         elif positions.ndim == 1:
             d = mag(positions - self.rCM)
-            return 4*np.pi*self.rho_s()*self.rs()**3*(np.log((d + self.rs())/self.rs()) - d/(d + self.rs()))*heav(self.rtrunc() - d, 0.) + self.mass*heav(-self.rtrunc() + d, 1.)
-        ds = mag(positions - self.rCM)
+            return cases(d-self.rtrunc(),
+                        4*np.pi*self.rho_s()*self.rs()**3*(np.log((d + self.rs())/self.rs())-d/(d + self.rs())),
+                        self.mass)
         
-        return 4*np.pi*self.rho_s()*self.rs()**3*(np.log((ds + self.rs())/self.rs()) - ds/(ds + self.rs()))*heav(self.rtrunc() - ds, 0.) + self.mass*heav(-self.rtrunc() + ds, 1.)
+        ds = mag(positions - self.rCM)
+        return cases(ds-self.rtrunc(),
+                    4*np.pi*self.rho_s()*self.rs()**3*(np.log((ds + self.rs())/self.rs())-ds/(ds + self.rs())),
+                    self.mass)
 
     # Escape velocity in km/s
     def vesc(self, position: np.ndarray) -> float:
@@ -86,7 +96,7 @@ class AxionMiniclusterNFW:
                 if mag(v_try) < vesc:
                     found = True
             
-        return v_try*randdir()
+        return v_try*randdir3d()
     
     # Velocity dispersion for many positions inside the minicluster
     def vsdisp(self, positions: np.ndarray) -> np.ndarray:
