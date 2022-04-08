@@ -3,7 +3,7 @@ from typing import Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
-from numba import jit, njit
+from numba import njit
 
 from scripts.basic import mag
 from scripts.globals import G, ma, outdir, yr

@@ -4,7 +4,7 @@ from typing import Callable, Generator
 import numpy as np
 from numba import njit
 
-from scripts.basic import mag, randdir3d, step
+from scripts.basic import mag, step
 from scripts.globals import EmptyClass
 
 
@@ -37,11 +37,17 @@ def metropolis(pdistr: Callable, n: int, x0: float = 0.1, sigma: float = 0.1, xb
 # Radial probability distribution for an axion cluster
 @njit
 def rdistr(r: float, rbounds: tuple = (0., 1.), AC: object = EmptyClass()) -> float:
-    return r**2 * AC.rho_prf(AC.rtrunc() * r, rbounds)
+    if isinstance(r, float):
+        return r**2 * AC.rho_prf(AC.rtrunc() * r, rbounds)
+    
+    return AC.rho_prf(AC.rtrunc() * r, rbounds)
 
-# Step distribution for 2d and 3d (or any higher d), for 1d use step instead
+# Step distribution in any number of dimensions
 @njit
 def stepdistr(v: np.ndarray, xbounds: tuple = (0., 1.), O: object = EmptyClass()) -> float:
+    if isinstance(v, float):
+        return step(v, xbounds)
+    
     toret = 1.
     for ii in range(len(v)):
         toret = toret*step(v[ii], xbounds)
@@ -52,4 +58,8 @@ def stepdistr(v: np.ndarray, xbounds: tuple = (0., 1.), O: object = EmptyClass()
 @njit
 def cyldistr(v: np.ndarray, xbounds: tuple = (0., 1.), O: object = EmptyClass()) -> float:
     return step(mag(v*np.array([1., 0., 1.])), (0., 1.)) * step(v[1], xbounds)   # Axis of cylinder along yaxis
+
+@njit
+def rincyl(r: np.ndarray, xbounds: tuple = (0., 1.), O: object = EmptyClass()) -> float:
+    return rdistr(r, xbounds)
     

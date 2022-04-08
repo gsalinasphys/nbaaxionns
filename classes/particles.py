@@ -37,17 +37,3 @@ class Particles:
 
         if first_update:
             self.positions += nums_vs(dts, self.velocities)
-
-    # # Add particle given their position, velocity, acceleration and time
-    # def add_p(self, position: np.ndarray, velocity: np.ndarray, acceleration: np.ndarray = np.zeros(3), time: np.ndarray = 0.) -> None:
-    #     if len(self.positions):
-    #         self.positions = np.append(self.positions, position.reshape((1,3)), axis=0)
-    #         self.velocities = np.append(self.velocities, velocity.reshape((1,3)), axis=0)
-    #         self.accelerations = np.append(self.accelerations, acceleration.reshape((1,3)), axis=0)
-    #         self.times = np.append(self.times, time)
-    #     else:
-    #         self.positions, self.velocities, self.accelerations = position.reshape((1,3)), velocity.reshape((1,3)), acceleration.reshape((1,3))   
-        
-    # def add_ps(self, positions: np.ndarray, velocities: np.ndarray, accelerations: np.ndarray, times: np.ndarray) -> None:
-    #     for ii in range(len(positions)):
-    #         self.add_p(positions[ii], velocities[ii], accelerations[ii], times[ii])

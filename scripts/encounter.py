@@ -11,6 +11,7 @@ from scripts.orbits import add_ps, min_approach, rm_far, trajs, update_ps
 
 
 # Roche radius (km), NS mass in M_Sun and axion clump mass in 10^{-10}M_Sun
+@njit(cache=True)
 def roche(AC: object, NS: object) -> float:
     return AC.rtrunc()*np.power(2*NS.mass/(1e-10*AC.mass), 1/3)
 
@@ -32,7 +33,7 @@ def trajAC(pAC: object, NS: object, rmin: float = None, rprecision: float = 1e-2
 def selectrvs(AC: object, NS: object, nps: int, rmax: float, rcyl: float, b: float, nsamples: int = 10_000_000) -> np.ndarray:
     ps = Particles(np.empty((0,1)), np.empty((0,1)))
     while len(ps.positions) < nps:
-        rs = metropolis(AC, rdistr, nsamples, x0=b/AC.rtrunc(), sigma=1e-1*rcyl/AC.rtrunc(), rbounds=(b-rcyl, b+rcyl))
+        rs = metropolis(rdistr, nsamples, x0=b/AC.rtrunc(), sigma=1e-1*rcyl/AC.rtrunc(), rbounds=(b-rcyl, b+rcyl))
         rsdrawn = AC.rCM + np.array(list(rs))
         rsdrawn = rsdrawn[mag(rsdrawn[:, [0, 2]]) < rcyl]
         

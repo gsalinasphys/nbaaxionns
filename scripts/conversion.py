@@ -1,7 +1,6 @@
 from typing import Generator
 
 import numpy as np
-from numba import njit
 from scipy.optimize import root_scalar
 
 from scripts.basic import mag, randdirs3d
