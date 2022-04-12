@@ -5,9 +5,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from classes import AxionMiniclusterNFW, NeutronStar, Particles
-from scripts import (energy, grav_en, mag, metropolis, min_approach,
+from scripts import (cylmax, energy, grav_en, mag, metropolis, min_approach,
                      plot_trajs, randdir3d, randdirs3d, rc, rdistr, repeat,
-                     rm_far, runtrajs, single_trajs, trajAC, trajs, truntrajs,
+                     rm_far, roche, selectrvs, single_trajs, trajAC, trajs,
                      update_ps)
 
 
@@ -37,50 +37,44 @@ Concentration:              {O.c}
 """
         )
 
+
+def runtrajs(nps: int, b: float, vin: np.ndarray, 
+             NSparams: tuple = (1.,10.,1.,np.array([1.,0.,1.]),1.,0.,0.),
+             ACparams: tuple = (1, 1., 1.55, 100., 1), lbounds: tuple = (-1., 1.),
+             rprecision: float = 5e-2) -> np.ndarray:
+    if ACparams[0]:
+        ACmass, delta, c, vdisptype = ACparams[1:]
+        AC = AxionMiniclusterNFW(mass=ACmass, delta=delta, c=c, vdisptype=vdisptype)
+    
+    NSmass, radius, T, axis, B0, misalign, psi0 = NSparams
+    NS = NeutronStar(mass=NSmass, radius=radius, T=T, axis=axis, B0=B0, misalign=misalign, psi0=psi0)
+    
+    rvsin = np.array([b*AC.rtrunc(), 0., 1e16]), vin
+    pAC = Particles(np.array([rvsin[0]]), np.array([rvsin[1]]))
+    trajAC(pAC, NS, roche(AC, NS))
+    AC.rCM, AC.vCM = pAC.positions[0], pAC.velocities[0]
+    
+    cylbounds = ((0., cylmax(AC, NS)), (lbounds[0], lbounds[1]))
+    rvsinps = selectrvs(AC, NS, nps, NS.rcmax(), cylbounds)
+    ps = Particles(rvsinps[0], rvsinps[1])
+    
+    return trajs(ps, NS, rlimits=(NS.radius, NS.rcmax()), retval=True, rprecision=rprecision)
+
 def main() -> None:
-    
-    # rin, vin = [6e3, 1e14, 0], [0, -200., 0]
-    # nps = 160
-    # MC = AxionMiniclusterNFW(np.array(rin), np.array(vin))
-    # pMC = Particles(MC.rCM.reshape((1,3)), MC.vCM.reshape((1,3)))
-    # NS = NeutronStar()
-    
-    # print(repr(NS))
-    # print(repr(MC))
-        
-    # samples = mag(np.array(list(metropolis(MC, rdistr, 1_000_000))))
-    # plt.hist(abs(samples), bins=np.linspace(0,1.,1000))
-    # plt.show()
-    # plt.close()
-    
     start = time.perf_counter()
     
-    nps = (16*16 + 1)
-    rsin = np.array([[np.random.random()*1e2, 1e14, 0] for _ in range(1, nps+1)])
-    vsin = repeat(np.array([0, -200., 0.]), nps)
-    rvsin = (rsin, vsin)
-    rmax = 100.
-    NSparams = (1.,10.,1.,np.array([1.,0.,1.]),1.,0.,0.)
-    rprecision = 1e-2
+    b = 0.2
+    vin = np.array([0., 0., -200.])
+    nps, rmax = 160, 100.
+    lbounds = (-1., 1.)
+    rprecision = 5e-2
     
     ncores = mp.cpu_count() - 1
     with mp.Pool(processes=ncores) as pool:
-        result = pool.starmap(truntrajs, [(runtrajs, rvsin, rmax, NSparams, rprecision) for _ in range(ncores)])
+        result = pool.starmap(runtrajs, [(nps, b, vin) for _ in range(2*ncores)])
         pool.close()
         pool.join()
-        
-    print(result[0])
-    print(result[0][-1, 0])
-    print(result[0].shape)
     
-    # print(trajAC(pMC, NS, 100.))
-    # print(pMC.positions[0], pMC.velocities[0])
-    
-    # p = Particles(np.array([rin]*nps), np.array([vin]*nps))
-    # p2 = Particles(np.array([rin]*nps), np.array([vin]*nps))
-    # trajsraw = trajs(p, NS, (10,100), 'test', retval=True)
-    # sgltrajs = list(single_trajs(trajsraw))
-    # plot_trajs(sgltrajs, NS, show=True)
     
     end = time.perf_counter()
     print("Run time: ", np.round(end - start, 2))
