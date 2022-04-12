@@ -1,4 +1,5 @@
 import random
+from math import atan, pi
 from typing import Callable, Generator
 
 import numpy as np
@@ -52,15 +53,25 @@ def rdistr(r: float, rbounds: tuple = (0., 1.), AC: object = EmptyClass()) -> fl
     if isinstance(r, float):
         return r**2 * AC.rho_prf(AC.rtrunc()*r, rbounds)
     
-    return AC.rho_prf(AC.rtrunc()*r + AC.rCM, rbounds)
+    return AC.rho_prf(AC.rtrunc()*r+AC.rCM, rbounds)
 
 # Step distribution for 2d and 3d (or any higher d), for 1d use step instead
 @njit
 def cyldistr(v: np.ndarray, cylbounds: tuple = ((0., 1.), (0., 1.)), O: object = EmptyClass()) -> float:    # Tuple cylbounds in the format ((0., rcyl), (Lmin, Lmax))
     return step(mag(v[:2]), cylbounds[0]) * step(v[2], cylbounds[1])   # Axis of cylinder along z-axis
 
-# Distribution for axion clump points inside a cylinder with axis along the zaxis
+# # Step distribution for 2d and 3d (or any higher d), for 1d use step instead
+# @njit
+# def conedistr(v: np.ndarray, conebounds: tuple = ((0., pi), (0., 1.), 0.), O: object = EmptyClass()) -> float:
+#     return step(atan(mag(v[:2])/(v[2]-conebounds[2])), conebounds[0]) * step(v[2]-conebounds[2], conebounds[1])   # Axis of cone along z-axis
+
+# Distribution for axion clump points inside a cylinder with axis along the z-axis
 @njit
 def rincyl(r: np.ndarray, cylbounds: tuple = ((0., 1.), (0., 1.)), AC: object = EmptyClass()) -> float:
     return rdistr(r-AC.rCM*np.array([1.,0.,0.])/AC.rtrunc(), (0., 1.), AC) * cyldistr(r, cylbounds, AC)
-    
+
+# # Distribution for axion clump points inside a cone with axis along the z-axis
+# @njit
+# def rincone(r: np.ndarray, conebounds: tuple = ((0., pi), (0., 1.), 0.), AC: object = EmptyClass()) -> float:
+#     return conedistr(r, conebounds, AC)
+# # rdistr(r-AC.rCM/AC.rtrunc(), (0., 1.), AC) *

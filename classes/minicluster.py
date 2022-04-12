@@ -30,7 +30,7 @@ class AxionMiniclusterNFW:
 
     def rs(self) -> float:   # In km
         f_NFW = np.log(1 + self.c) - self.c/(1 + self.c)
-        return (self.mass/(4*np.pi*self.rho_s()*f_NFW)) ** (1/3)
+        return (self.mass/(4*pi*self.rho_s()*f_NFW)) ** (1/3)
 
     def rtrunc(self) -> float:  # In km
         return self.c*self.rs()
@@ -49,30 +49,30 @@ class AxionMiniclusterNFW:
     def grav_pot(self, positions: np.ndarray) -> np.ndarray:   # In units of (km/s)^2
         if isinstance(positions, float):
             d = positions   # Assumes the clump is at the origin
-            return -4e-10*np.pi*G*self.rho_s()*self.rs()**3/d*np.log((d + self.rs())/self.rs())
+            return -4e-10*pi*G*self.rho_s()*self.rs()**3/d*np.log((d + self.rs())/self.rs())
         elif positions.ndim == 1:
             d = mag(positions - self.rCM)
-            return -4e-10*np.pi*G*self.rho_s()*self.rs()**3/d*np.log((d + self.rs())/self.rs())
+            return -4e-10*pi*G*self.rho_s()*self.rs()**3/d*np.log((d + self.rs())/self.rs())
         
         ds = mag(positions - self.rCM)
-        return -4e-10*np.pi*G*self.rho_s()*self.rs()**3/ds*np.log((ds + self.rs())/self.rs())
+        return -4e-10*pi*G*self.rho_s()*self.rs()**3/ds*np.log((ds + self.rs())/self.rs())
     
     # Enclosed mass from a given position, in units of 10^{-10} M_Sun
     def encl_mass(self, positions: np.ndarray) -> np.ndarray:
         if isinstance(positions, float):
             d = positions   # Assumes the clump is at the origin
             return cases(d-self.rtrunc(),
-                        4*np.pi*self.rho_s()*self.rs()**3*(np.log((d + self.rs())/self.rs())-d/(d + self.rs())),
+                        4*pi*self.rho_s()*self.rs()**3*(np.log((d + self.rs())/self.rs())-d/(d + self.rs())),
                         self.mass)
         elif positions.ndim == 1:
             d = mag(positions - self.rCM)
             return cases(d-self.rtrunc(),
-                        4*np.pi*self.rho_s()*self.rs()**3*(np.log((d + self.rs())/self.rs())-d/(d + self.rs())),
+                        4*pi*self.rho_s()*self.rs()**3*(np.log((d + self.rs())/self.rs())-d/(d + self.rs())),
                         self.mass)
         
         ds = mag(positions - self.rCM)
         return cases(ds-self.rtrunc(),
-                    4*np.pi*self.rho_s()*self.rs()**3*(np.log((ds + self.rs())/self.rs())-ds/(ds + self.rs())),
+                    4*pi*self.rho_s()*self.rs()**3*(np.log((ds + self.rs())/self.rs())-ds/(ds + self.rs())),
                     self.mass)
 
     # Escape velocity in km/s
@@ -106,31 +106,8 @@ class AxionMiniclusterNFW:
                     found = True
         
         return mag(v_try)*randdir3d()
-
-    # # Velocity dispersion at a given position inside the minicluster
-    # def vdisp(self, position: np.ndarray, center: float = 0., delta: float = np.pi) -> np.ndarray:
-    #     found = False
-    #     while not found:
-    #         if self.vdisptype == 1: # Maxwell-Boltzmann
-    #             vesc, vcirc = self.vesc(position), self.vcirc(position)
-    #             v_try = np.random.normal(0, vcirc, 3)
-    #             if mag(v_try) < vesc:
-    #                 found = True
-        
-    #     return np.append(randdir2d(center, delta)*mag(v_try[:2]), v_try[2])
-    
-    # def center(self, position: np.ndarray) -> float:
-    #     return atan(position[1]/position[0]) if position[0]<0 else atan(position[1]/position[0]) + pi
-    
-    # def delta(self, position: np.ndarray, bmax: float) -> np.ndarray:
-    #     return bmax/mag(position)
    
     # Velocity dispersion for many positions inside the minicluster
     def vsdisp(self, positions: np.ndarray) -> np.ndarray:
         for ii in range(len(positions)):
             yield self.vdisp(positions[ii])
-            
-    # # Velocity dispersion for many positions inside the minicluster
-    # def vsdisp(self, positions: np.ndarray, bmax: float) -> np.ndarray:
-    #     for ii in range(len(positions)):
-    #         yield self.vdisp(positions[ii], self.center(positions[ii]), self.delta(positions[ii], bmax))

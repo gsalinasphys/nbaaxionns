@@ -32,7 +32,7 @@ f"""---------- Axion Clump properties ----------
 Clump type:                 Axion Minicluster (NFW profile)
 Mass:                       {O.mass} x 10^(-10) M_Sun
 Truncation Radius:          {O.rtrunc():.2e} x km
-Phi:                        {O.phi}
+Delta:                      {O.delta}
 Concentration:              {O.c}
 """
         )

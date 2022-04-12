@@ -1,4 +1,4 @@
-from math import sqrt
+from math import pi, sqrt, tan
 from typing import Callable
 
 import numpy as np
@@ -30,7 +30,15 @@ def trajAC(pAC: object, NS: object, rmin: float = None, rprecision: float = 5e-2
         update_ps(pAC, NS, rprecision=rprecision)
 
 # def bmax(AC: object, NS: object, rmax: float) -> float:
-#     return rmax**2 + 2*G*NS.mass*rmax/mag(AC.vCM)**2
+#     return sqrt(rmax**2 + 2*G*NS.mass*rmax/mag(AC.vCM)**2)
+
+# # Safe cylinder radius to draw particles from
+# def cylmax(AC: object, NS: object):
+#     rtry = AC.deltav()*roche(AC, NS) / (mag(AC.vCM)*AC.rtrunc())
+#     if rtry < AC.rtrunc():
+#         return rtry
+    
+#     return AC.rtrunc()
 
 # Safe cylinder radius to draw particles from
 def cylmax(AC: object, NS: object):
@@ -39,6 +47,29 @@ def cylmax(AC: object, NS: object):
         return rtry
     
     return AC.rtrunc()
+
+# def selectrvs(AC: object, NS: object, nps: int, rmax: float, conebnds: tuple = ((0., pi), (0., 1.), 0.), nsamples: int = 1_000_000) -> np.ndarray:
+#     zcone, L = conebnds[2]+0.5*conebnds[1][0]+0.5*conebnds[1][1], conebnds[1][1]-conebnds[1][0]
+#     alpha, dalpha = 0.5*conebnds[0][0]+0.5*conebnds[0][1], conebnds[0][1]-conebnds[0][0]
+    
+#     ps = Particles(np.empty((0,1)), np.empty((0,1)))
+#     while len(ps.positions) < nps:
+#         rs = metropolis(rincyl, nsamples,
+#                         x0=np.append((zcone-conebnds[2])*tan(alpha)*randdir2d(), zcone),
+#                         sigma=np.array([dalpha/10., dalpha/10., 0.1*L]),
+#                         xbounds=conebnds, O=AC)
+#         rsdrawn = AC.rCM + AC.rtrunc()*np.array(list(rs))
+        
+#         vsdrawn = repeat(AC.vCM, len(rsdrawn))
+#         if AC.vdisptype:
+#             vsdrawn += np.array(list(AC.vsdisp(rsdrawn)))
+#         accelerations, times = repeat(np.zeros(3), len(rsdrawn)), np.repeat(0., len(rsdrawn))
+        
+#         add_ps(ps, rsdrawn, vsdrawn, accelerations, times)
+#         rm_far(ps, NS, rmax)
+#         print(len(ps.positions))
+        
+#     return (ps.positions, ps.velocities)
 
 def selectrvs(AC: object, NS: object, nps: int, rmax: float, cylbnds: tuple = ((0., 1.), (0., 1.)), nsamples: int = 1_000_000) -> np.ndarray:
     zcyl, L = 0.5*cylbnds[1][0]+0.5*cylbnds[1][1], cylbnds[1][1]-cylbnds[1][0]

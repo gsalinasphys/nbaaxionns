@@ -1,5 +1,5 @@
 import random
-from math import sqrt
+from math import pi, sqrt
 from typing import Generator
 
 import numpy as np
@@ -70,13 +70,13 @@ def cases(cond: np.ndarray, inside: np.ndarray, outside: np.ndarray):
 
 # Random direction in 2d centered at and angle with spread delta
 @njit
-def randdir2d(center: float = 0., delta: float = np.pi) -> np.ndarray:
-    delta = min(delta, np.pi)
+def randdir2d(center: float = 0., delta: float = pi) -> np.ndarray:
+    delta = min(delta, pi)
     theta = random.uniform(center-delta, center+delta)
     return np.array([np.cos(theta), np.sin(theta)])
 
 @njit
-def randdirs2d(n: int, center: float = 0., delta: float = np.pi) -> Generator:
+def randdirs2d(n: int, center: float = 0., delta: float = pi) -> Generator:
     for ii in range(n):
         yield randdir2d(center, delta)
     

@@ -1,4 +1,4 @@
-from math import sqrt
+from math import pi, sqrt
 
 import numpy as np
 from numba import float64  # import the types
@@ -65,7 +65,7 @@ class NeutronStar:
 
     # Magnetic dipole with magnitude in units of (10^14 G)*km^3
     def m(self, time: float) -> np.ndarray:
-        psi = self.psi0 + 2*np.pi/self.T*time
+        psi = self.psi0 + 2*pi/self.T*time
         return 0.5*self.B0*self.radius**3*np.array([np.sin(self.misalign)*np.sin(psi), np.sin(self.misalign)*np.cos(psi), np.cos(self.misalign)])
 
     def B(self, position: np.ndarray, time: float) -> np.ndarray:   # In units of 10^14 Gauss, just the dipole contribution
