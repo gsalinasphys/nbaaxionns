@@ -22,7 +22,7 @@ def proposal(x: float, sigma: float = 0.1) -> float:
 
 # Metropolis–Hastings algorithm for sampling from a probability distribution
 @njit
-def metropolis(pdistr: Callable, n: int, x0: float = 0.1, sigma: float = 0.1, xbounds: tuple = (0., 1.), O: object = EmptyClass()) -> Generator:
+def metropolis(pdistr: Callable, n: int, x0: float = 0.5, sigma: float = 0.1, xbounds: tuple = (0., 1.), O: object = EmptyClass()) -> Generator:
     x = x0 # start somewhere
     for _ in range(n):
         trial = proposal(x, sigma=sigma) # random neighbor from the proposal distribution
@@ -33,14 +33,6 @@ def metropolis(pdistr: Callable, n: int, x0: float = 0.1, sigma: float = 0.1, xb
             x = trial
 
         yield x
-
-# Radial probability distribution for an axion cluster
-@njit
-def rdistr(r: float, rbounds: tuple = (0., 1.), AC: object = EmptyClass()) -> float:
-    if isinstance(r, float):
-        return r**2 * AC.rho_prf(AC.rtrunc() * r, rbounds)
-    
-    return AC.rho_prf(AC.rtrunc() * r, rbounds)
 
 # Step distribution in any number of dimensions
 @njit
@@ -54,12 +46,21 @@ def stepdistr(v: np.ndarray, xbounds: tuple = (0., 1.), O: object = EmptyClass()
         
     return toret
 
+# Radial probability distribution for an axion clump
+@njit
+def rdistr(r: float, rbounds: tuple = (0., 1.), AC: object = EmptyClass()) -> float:
+    if isinstance(r, float):
+        return r**2 * AC.rho_prf(AC.rtrunc()*r, rbounds)
+    
+    return AC.rho_prf(AC.rtrunc()*r + AC.rCM, rbounds)
+
 # Step distribution for 2d and 3d (or any higher d), for 1d use step instead
 @njit
-def cyldistr(v: np.ndarray, xbounds: tuple = (0., 1.), O: object = EmptyClass()) -> float:
-    return step(mag(v*np.array([1., 0., 1.])), (0., 1.)) * step(v[1], xbounds)   # Axis of cylinder along yaxis
+def cyldistr(v: np.ndarray, cylbounds: tuple = ((0., 1.), (0., 1.)), O: object = EmptyClass()) -> float:    # Tuple cylbounds in the format ((0., rcyl), (Lmin, Lmax))
+    return step(mag(v[:2]), cylbounds[0]) * step(v[2], cylbounds[1])   # Axis of cylinder along z-axis
 
+# Distribution for axion clump points inside a cylinder with axis along the zaxis
 @njit
-def rincyl(r: np.ndarray, xbounds: tuple = (0., 1.), O: object = EmptyClass()) -> float:
-    return rdistr(r, xbounds)
+def rincyl(r: np.ndarray, cylbounds: tuple = ((0., 1.), (0., 1.)), AC: object = EmptyClass()) -> float:
+    return rdistr(r-AC.rCM*np.array([1.,0.,0.])/AC.rtrunc(), (0., 1.), AC) * cyldistr(r, cylbounds, AC)
     

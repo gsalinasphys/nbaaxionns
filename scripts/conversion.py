@@ -4,7 +4,7 @@ import numpy as np
 from scipy.optimize import root_scalar
 
 from scripts.basic import mag, randdirs3d
-from scripts.globals import ma, maGHz
+from scripts.globals import maGHz
 
 
 def rc(NS: object, position: np.ndarray, time: float, exact: bool = False) -> float:    # Estimated conversion radius in some direction
@@ -14,7 +14,7 @@ def rc(NS: object, position: np.ndarray, time: float, exact: bool = False) -> fl
             return NS.wp(x*dir, time) - maGHz
         
     try:
-        rc = root_scalar(to_min, bracket=[NS.radius, 100*NS.radius]).root
+        rc = root_scalar(to_min, bracket=[NS.radius, 100*NS.radius], xtol=1e-8, rtol=1e-8).root
         if rc > NS.radius and rc < 100*NS.radius:
             return rc
     except ValueError:

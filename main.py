@@ -6,8 +6,8 @@ import numpy as np
 
 from classes import AxionMiniclusterNFW, NeutronStar, Particles
 from scripts import (energy, grav_en, mag, metropolis, min_approach,
-                     plot_trajs, randdir3d, randdirs3d, rc, rdistr, repeat, rm_far,
-                     runtrajs, single_trajs, trajAC, trajs, truntrajs,
+                     plot_trajs, randdir3d, randdirs3d, rc, rdistr, repeat,
+                     rm_far, runtrajs, single_trajs, trajAC, trajs, truntrajs,
                      update_ps)
 
 
@@ -32,7 +32,7 @@ f"""---------- Axion Clump properties ----------
 Clump type:                 Axion Minicluster (NFW profile)
 Mass:                       {O.mass} x 10^(-10) M_Sun
 Truncation Radius:          {O.rtrunc():.2e} x km
-Delta:                      {O.delta}
+Phi:                        {O.phi}
 Concentration:              {O.c}
 """
         )
@@ -49,7 +49,7 @@ def main() -> None:
     # print(repr(MC))
         
     # samples = mag(np.array(list(metropolis(MC, rdistr, 1_000_000))))
-    # plt.hist(np.abs(samples), bins=np.linspace(0,1.,1000))
+    # plt.hist(abs(samples), bins=np.linspace(0,1.,1000))
     # plt.show()
     # plt.close()
     

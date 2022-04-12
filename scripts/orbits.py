@@ -1,9 +1,11 @@
 import itertools
+from math import sqrt
 from typing import Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
 from numba import njit
+from scipy.interpolate import interp1d
 
 from scripts.basic import mag
 from scripts.globals import G, ma, outdir, yr
@@ -22,11 +24,7 @@ def energy(p: object, NS: object) -> np.ndarray:
 # Calculated distances of minimum approach for the particles
 @njit
 def min_approach(p: object, NS: object) -> np.ndarray:
-    # energies, ang_momenta = energy(p, NS), mag(p.ang_momentum())
-    # rmins = -G*NS.mass*ma/(2*energies) + 0.5*np.sqrt((G*NS.mass*ma/energies)**2 + 2*ma*ang_momenta**2/energies)
-    # return rmins
     return -G*NS.mass*ma/(2*energy(p, NS)) + 0.5*np.sqrt((G*NS.mass*ma/energy(p, NS))**2 + 2*ma*mag(p.ang_momentum())**2/energy(p, NS))
-    
 
 # Simulated distances of minimum approach for the particles, compare with above to test quality of orbits
 @njit
@@ -56,7 +54,7 @@ def rm_far(p: object, NS: object, rmax: float) -> None:
 
 # Implementation of Verlet's method to update position and velocity (for reference, see Velocity Verlet in https://en.m.wikipedia.org/wiki/Verlet_integration)
 @njit
-def update_ps(p: object, NS: object, rprecision: float = 1e-2) -> None:
+def update_ps(p: object, NS: object, rprecision: float = 5e-2) -> None:
     # Update accelerations
     p.accelerations = NS.grav_field(p.positions)
 
@@ -80,7 +78,7 @@ def update_ps(p: object, NS: object, rprecision: float = 1e-2) -> None:
     p.times += dts
     
 # Full trajectories, use batches of 160 particles for max speed (maybe in general 10ncores?)
-def trajs(p: object, NS: object, rlimits: Tuple = None, fname: str = None, retval: bool = False, rprecision: float = 1e-2) -> None:
+def trajs(p: object, NS: object, rlimits: Tuple = None, fname: str = None, retval: bool = False, rprecision: float = 5e-2) -> None:
     finished = False
     
     data = [[] for i in range(8)]
@@ -120,13 +118,22 @@ def single_trajs(trajs: np.ndarray) -> np.ndarray:
 def torder(traj: np.ndarray) -> None:
     return traj[traj[:, 0].argsort()]
 
+# Interpolate trajectories
+def smoothtraj(traj: np.ndarray):
+    traj = torder(traj)
+    return interp1d(traj.T[0], traj.T[1:4], kind=11), interp1d(traj.T[0], traj.T[4:7], kind=11)
+
 # Plot trajectories
 def plot_traj(traj: np.ndarray, show: bool = False) -> None:
     ax = plt.axes()
+    ax.scatter(traj.T[3], traj.T[1], s=1)
+    
+    tmin, tmax = min(traj.T[0]), max(traj.T[0])
+    ts = np.linspace(tmin, tmax, 1000)
+    smtraj = smoothtraj(traj)[0](ts)
+    ax.plot(smtraj[2], smtraj[0], lw=1.)
 
-    ax.scatter(traj.T[2], traj.T[1], s=1)
-
-    plt.xlabel('$y$ (km)', fontsize=16)
+    plt.xlabel('$z$ (km)', fontsize=16)
     plt.ylabel('$x$ (km)', fontsize=16)
 
     if show:
@@ -138,12 +145,12 @@ def plot_trajs(trajs: np.ndarray, NS: object, fname: str = None, show: bool = Fa
     ax.set_aspect('equal')
 
     for traj in trajs:
-        ax.scatter(traj.T[2], traj.T[1], s=1e-2)
+        ax.scatter(traj.T[3], traj.T[1], s=1e-2)
         
     circle = plt.Circle((0, 0), NS.radius, facecolor='purple', alpha = 0.5)
     ax.add_patch(circle)
 
-    plt.xlabel('$y$ (km)', fontsize=16)
+    plt.xlabel('$z$ (km)', fontsize=16)
     plt.ylabel('$x$ (km)', fontsize=16)
     
     if fname is not None:

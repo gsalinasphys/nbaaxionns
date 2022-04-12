@@ -1,7 +1,9 @@
+from math import atan, pi, sqrt
+
 import numpy as np
 from numba import float64, int8  # import the types
 from numba.experimental import jitclass
-from scripts.basic import cases, heav, mag, randdir3d, step
+from scripts.basic import cases, heav, mag, randdir2d, randdir3d, step
 from scripts.globals import G, rho_eq
 
 spec = [
@@ -30,7 +32,7 @@ class AxionMiniclusterNFW:
         f_NFW = np.log(1 + self.c) - self.c/(1 + self.c)
         return (self.mass/(4*np.pi*self.rho_s()*f_NFW)) ** (1/3)
 
-    def rtrunc(self) -> float:
+    def rtrunc(self) -> float:  # In km
         return self.c*self.rs()
 
     def rho_prf(self, positions: np.ndarray, rbounds: tuple = (0., 1.)) -> np.ndarray:   # In units of 10^{-10}*M_Sun/km^3
@@ -41,12 +43,8 @@ class AxionMiniclusterNFW:
             d = mag(positions - self.rCM)
             return self.rho_s() / (d/self.rs()*(1 + d/self.rs())**2) * step(d/self.rtrunc(), rbounds)
         
-        ds = mag(positions - self.rCM) 
+        ds = mag(positions - self.rCM)  
         return self.rho_s() / (ds/self.rs()*(1 + ds/self.rs())**2) * step(ds/self.rtrunc(), rbounds)
-
-    # # Radial probability distribution for an axion cluster
-    # def rdistr(self, r: float, rbounds: tuple = (0., 1.)) -> float:
-    #     return r**2 * self.rho_prf(self.rtrunc() * r, rbounds)
 
     def grav_pot(self, positions: np.ndarray) -> np.ndarray:   # In units of (km/s)^2
         if isinstance(positions, float):
@@ -79,12 +77,23 @@ class AxionMiniclusterNFW:
 
     # Escape velocity in km/s
     def vesc(self, position: np.ndarray) -> float:
-        return np.sqrt(np.abs(2*self.grav_pot(position)))
+        return sqrt(abs(2*self.grav_pot(position)))
 
     # Circular velocity in km/s
     def vcirc(self, position: np.ndarray) -> float:
+        if isinstance(position, float): # Assumes the clump is at the origin
+            return 1e-5*sqrt(G*self.encl_mass(position)/position) * heav(self.rtrunc()-position, 1.)
+        
         rstoCM = position - self.rCM
-        return 1e-5*np.sqrt(G*self.encl_mass(position)/mag(rstoCM))
+        return 1e-5*sqrt(G*self.encl_mass(position)/mag(rstoCM)) * heav(self.rtrunc()-mag(rstoCM), 1.)
+
+    def deltav(self, prec: int = 100_000) -> float:
+        rs = np.linspace(1e-8, 1., prec)*self.rtrunc()
+        vscirc = np.empty_like(rs)
+        for ii in range(prec):
+            vscirc[ii] = self.vcirc(rs[ii])
+            
+        return max(vscirc)
 
     # Velocity dispersion at a given position inside the minicluster
     def vdisp(self, position: np.ndarray) -> np.ndarray:
@@ -95,10 +104,33 @@ class AxionMiniclusterNFW:
                 v_try = np.random.normal(0, vcirc, 3)
                 if mag(v_try) < vesc:
                     found = True
-            
-        return v_try*randdir3d()
+        
+        return mag(v_try)*randdir3d()
+
+    # # Velocity dispersion at a given position inside the minicluster
+    # def vdisp(self, position: np.ndarray, center: float = 0., delta: float = np.pi) -> np.ndarray:
+    #     found = False
+    #     while not found:
+    #         if self.vdisptype == 1: # Maxwell-Boltzmann
+    #             vesc, vcirc = self.vesc(position), self.vcirc(position)
+    #             v_try = np.random.normal(0, vcirc, 3)
+    #             if mag(v_try) < vesc:
+    #                 found = True
+        
+    #     return np.append(randdir2d(center, delta)*mag(v_try[:2]), v_try[2])
     
+    # def center(self, position: np.ndarray) -> float:
+    #     return atan(position[1]/position[0]) if position[0]<0 else atan(position[1]/position[0]) + pi
+    
+    # def delta(self, position: np.ndarray, bmax: float) -> np.ndarray:
+    #     return bmax/mag(position)
+   
     # Velocity dispersion for many positions inside the minicluster
     def vsdisp(self, positions: np.ndarray) -> np.ndarray:
         for ii in range(len(positions)):
             yield self.vdisp(positions[ii])
+            
+    # # Velocity dispersion for many positions inside the minicluster
+    # def vsdisp(self, positions: np.ndarray, bmax: float) -> np.ndarray:
+    #     for ii in range(len(positions)):
+    #         yield self.vdisp(positions[ii], self.center(positions[ii]), self.delta(positions[ii], bmax))

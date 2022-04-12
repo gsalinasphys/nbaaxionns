@@ -1,3 +1,5 @@
+from math import sqrt
+
 import numpy as np
 from numba import float64  # import the types
 from numba.experimental import jitclass
@@ -71,8 +73,9 @@ class NeutronStar:
         return 3*mydot(position, self.m(time))/d**5*position - self.m(time)/d**3
 
     def wp(self, position: np.ndarray, time: float) -> float:  # Plasma frequency in GHz
-        return 1.5e2*np.sqrt(np.abs(mydot(self.B(position, time), self.axis))/self.T)
+        return 1.5e2*sqrt(abs(mydot(self.B(position, time), self.axis))/self.T)
     
+    # Maximum radius of conversion
     def rcmax(self) -> float:
         return 28.231 * self.radius * (self.B0/(self.T*maGHz**2))**(1/3)
 

@@ -1,3 +1,5 @@
+import random
+from math import sqrt
 from typing import Generator
 
 import numpy as np
@@ -16,7 +18,7 @@ def repeat(v: np.ndarray, n: int) -> np.ndarray:
 @njit
 def mag(vs: np.ndarray) -> np.ndarray:
     if vs.ndim == 1:
-        return np.sqrt(np.sum(vs**2))
+        return sqrt(np.sum(vs**2))
     
     return np.sqrt(np.sum(vs**2, axis = 1))
 
@@ -66,12 +68,18 @@ def step(v: np.ndarray, xbounds: tuple = (0., 1.)):
 def cases(cond: np.ndarray, inside: np.ndarray, outside: np.ndarray):
     return inside*heav(-cond, 0.) + outside*heav(cond, 1.)
 
-# Random directions in 2d centered at and angle with spread delta
+# Random direction in 2d centered at and angle with spread delta
 @njit
-def randdirs2d(n: int, center: float = 0., delta: float = np.pi) -> np.ndarray:
-    thetas = np.random.uniform(center-delta, center+delta, n)
-    return np.vstack((np.cos(thetas), np.sin(thetas))).T
+def randdir2d(center: float = 0., delta: float = np.pi) -> np.ndarray:
+    delta = min(delta, np.pi)
+    theta = random.uniform(center-delta, center+delta)
+    return np.array([np.cos(theta), np.sin(theta)])
 
+@njit
+def randdirs2d(n: int, center: float = 0., delta: float = np.pi) -> Generator:
+    for ii in range(n):
+        yield randdir2d(center, delta)
+    
 # Method to draw uniformly distributed points along the unit sphere (Marsaglia 1972)
 @njit
 def randdir3d() -> np.ndarray:
@@ -83,8 +91,8 @@ def randdir3d() -> np.ndarray:
         if xnorm < 1:
             found = True
 
-    nx = 2*x1*np.sqrt(1 - xnorm)
-    ny = 2*x2*np.sqrt(1 - xnorm)
+    nx = 2*x1*sqrt(1 - xnorm)
+    ny = 2*x2*sqrt(1 - xnorm)
     nz = 1 - 2*xnorm
 
     return np.array([nx, ny, nz])
