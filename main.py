@@ -3,6 +3,7 @@ import time
 
 import matplotlib.pyplot as plt
 import numpy as np
+from numba import njit
 
 from classes import AxionMiniclusterNFW, NeutronStar, Particles
 from scripts import (cylmax, energy, grav_en, mag, metropolis, min_approach,
@@ -38,6 +39,7 @@ Concentration:              {O.c}
         )
 
 
+
 def runtrajs(nps: int, b: float, vin: np.ndarray, 
              NSparams: tuple = (1.,10.,1.,np.array([1.,0.,1.]),1.,0.,0.),
              ACparams: tuple = (1, 1., 1.55, 100., 1), lbounds: tuple = (-1., 1.),
@@ -55,17 +57,17 @@ def runtrajs(nps: int, b: float, vin: np.ndarray,
     AC.rCM, AC.vCM = pAC.positions[0], pAC.velocities[0]
     
     cylbounds = ((0., cylmax(AC, NS)), (lbounds[0], lbounds[1]))
-    rvsinps = selectrvs(AC, NS, nps, NS.rcmax(), cylbounds)
+    rvsinps = selectrvs(AC, NS, nps, NS.rcmax(), cylbounds, ps=Particles())
     ps = Particles(rvsinps[0], rvsinps[1])
     
-    return trajs(ps, NS, rlimits=(NS.radius, NS.rcmax()), retval=True, rprecision=rprecision)
+    return trajs(ps, NS, rlimits=(NS.radius, NS.rcmax()), rprecision=rprecision)
 
 def main() -> None:
     start = time.perf_counter()
     
     b = 0.2
     vin = np.array([0., 0., -200.])
-    nps, rmax = 160, 100.
+    nps = 160
     lbounds = (-1., 1.)
     rprecision = 5e-2
     

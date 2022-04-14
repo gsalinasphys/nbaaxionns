@@ -109,5 +109,14 @@ class AxionMiniclusterNFW:
    
     # Velocity dispersion for many positions inside the minicluster
     def vsdisp(self, positions: np.ndarray) -> np.ndarray:
+        vsdisp = np.empty((len(positions), 3))
         for ii in range(len(positions)):
-            yield self.vdisp(positions[ii])
+            for jj in range(3):
+                vsdisp[ii,jj] = self.vdisp(positions[ii])[jj]
+            
+        return vsdisp
+    
+    # # Velocity dispersion for many positions inside the minicluster
+    # def vsdisp(self, positions: np.ndarray) -> np.ndarray:
+    #     for ii in range(len(positions)):
+    #         yield self.vdisp(positions[ii])

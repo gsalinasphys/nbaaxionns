@@ -13,7 +13,7 @@ spec = [
 
 @jitclass(spec)
 class Particles:
-    def __init__(self, positions, velocities, acceleration=np.zeros(3), time=0.) -> None:
+    def __init__(self, positions=np.empty((0,3)), velocities=np.empty((0,3)), acceleration=np.zeros(3), time=0.) -> None:
         self.positions = positions      # km
         self.velocities = velocities    # km/s
         self.accelerations = repeat(acceleration, len(positions))     # km/s^2

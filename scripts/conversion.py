@@ -14,7 +14,7 @@ def rc(NS: object, position: np.ndarray, time: float, exact: bool = False) -> fl
             return NS.wp(x*dir, time) - maGHz
         
     try:
-        rc = root_scalar(to_min, bracket=[NS.radius, 100*NS.radius], xtol=1e-8, rtol=1e-8).root
+        rc = root_scalar(to_min, bracket=[NS.radius, 100*NS.radius], xtol=1e-10, rtol=1e-10).root
         if rc > NS.radius and rc < 100*NS.radius:
             return rc
     except ValueError:
