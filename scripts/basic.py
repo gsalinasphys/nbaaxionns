@@ -22,25 +22,14 @@ def mag(vs: np.ndarray) -> np.ndarray:
     
     return np.sqrt(np.sum(vs**2, axis = 1))
 
-# # Dot product, faster than Numpy's np.dot for smaller vectors
-# @njit
-# def mydot(v1: np.ndarray, v2: np.ndarray) -> float:
-#     prods = np.empty_like(v1)
-#     for ii in range(len(v1)):
-#         prods[ii] = v1[ii]*v2[ii]
-        
-#     return sum(prods)
-
+# Dot product, faster than Numpy's np.dot for smaller vectors
 @njit
 def mydot(v1: np.ndarray, v2: np.ndarray) -> float:
-    if v1.ndim == 1:
-        prods = np.empty_like(v1)
-        for ii in range(len(v1)):
-            prods[ii] = v1[ii]*v2[ii]
+    prods = np.empty_like(v1)
+    for ii in range(len(v1)):
+        prods[ii] = v1[ii]*v2[ii]
         
-        return sum(prods)
-    
-    return np.sum(v1*v2, axis=1)
+    return sum(prods)
         
 # Linear combination of vectors with coefficients given by numbers
 @njit
@@ -112,3 +101,9 @@ def randdir3d() -> np.ndarray:
 def randdirs3d(n: int) -> Generator:
     for ii in range(n):
         yield randdir3d()
+        
+# Find where array crosses zero
+@njit
+def zeroat(v: np.ndarray) -> np.ndarray:
+    prods = v[1:]*v[:-1]
+    return np.where(prods < 0)[0]

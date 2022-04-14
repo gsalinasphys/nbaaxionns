@@ -4,7 +4,7 @@ from typing import Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
-from numba import njit
+from numba import int64, njit
 from scipy.interpolate import interp1d
 
 from scripts.basic import mag
@@ -33,14 +33,15 @@ def min_approach_sim(traj: np.ndarray) -> float:
 
 # Add particles given their positions, velocities, accelerations and times
 @njit
-def add_ps(p: object, positions: np.ndarray, velocities: np.ndarray, accelerations: np.ndarray, times: np.ndarray) -> None:
+def add_ps(p: object, positions: np.ndarray, velocities: np.ndarray, accelerations: np.ndarray, times: np.ndarray, nperiods: np.ndarray) -> None:
     if not p.positions.size:
-        p.positions, p.velocities, p.accelerations, p.times = positions, velocities, accelerations, times
+        p.positions, p.velocities, p.accelerations, p.times, p.nperiods = positions, velocities, accelerations, times, nperiods
     else:
         p.positions = np.concatenate((p.positions, positions))
         p.velocities = np.concatenate((p.velocities, velocities))
         p.accelerations = np.concatenate((p.accelerations, accelerations))
         p.times = np.append(p.times, times)
+        p.nperiods = np.append(p.nperiods, nperiods)
 
 # Remove particles that are not gonna reach rcmax
 def rm_far(p: object, NS: object) -> None:
@@ -52,6 +53,7 @@ def rm_ps(p: object, inds: int) -> None:
     p.velocities = np.delete(p.velocities, inds, axis=0)
     p.accelerations = np.delete(p.accelerations, inds, axis=0)
     p.times = np.delete(p.times, inds)
+    p.nperiods = np.delete(p.nperiods, inds)
 
 # Implementation of Verlet's method to update position and velocity (for reference, see Velocity Verlet in https://en.m.wikipedia.org/wiki/Verlet_integration)
 @njit
@@ -73,16 +75,18 @@ def update_ps(p: object, NS: object, rprecision: float = 5e-2) -> None:
 
     p.times += dts
     
-    # Reset clock every year
-    period = 1.*yr
+    # Reset clock every period
+    period = NS.T
     if np.any(p.times > period):
+        for ii in range(len(p.times)):
+            p.nperiods[ii] += p.times[ii]//period
         p.times %= period
    
 # Full trajectories, use batches of 160 particles for max speed (maybe in general 10ncores?)
 def trajs(p: object, NS: object, rlimits: Tuple = None, rprecision: float = 5e-2) -> None:
     finished = False
     
-    data = [[] for i in range(8)]
+    data = [[] for i in range(9)]
     while not finished or min(mag(p.positions)) < rlimits[1]:
         if min(mag(p.positions)) < rlimits[1]:
             finished = True
@@ -97,6 +101,7 @@ def trajs(p: object, NS: object, rlimits: Tuple = None, rprecision: float = 5e-2
         data[5].extend(p.velocities.T[0][ps_in])
         data[6].extend(p.velocities.T[1][ps_in])
         data[7].extend(p.velocities.T[2][ps_in])
+        data[8].extend(p.nperiods[ps_in])
         
         update_ps(p, NS, rprecision=rprecision)
 

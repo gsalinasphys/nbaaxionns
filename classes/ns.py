@@ -63,41 +63,17 @@ class NeutronStar:
                     -G*self.mass*((self.radius**2 - ds**2)/(2*self.radius**3) + 1/self.radius),
                     -G*self.mass/ds)
 
-    # # Magnetic dipole with magnitude in units of (10^14 G)*km^3
-    # def m(self, time: float) -> np.ndarray:
-    #     psi = self.psi0 + 2*pi/self.T*time
-    #     return 0.5*self.B0*self.radius**3*np.array([np.sin(self.misalign)*np.sin(psi), np.sin(self.misalign)*np.cos(psi), np.cos(self.misalign)])
-
-    # def B(self, position: np.ndarray, time: float) -> np.ndarray:   # In units of 10^14 Gauss, just the dipole contribution
-    #     d = mag(position)
-    #     return 3*mydot(position, self.m(time))/d**5*position - self.m(time)/d**3
-
-    # def wp(self, position: np.ndarray, time: float) -> float:  # Plasma frequency in GHz
-    #     return 1.5e2*sqrt(abs(mydot(self.B(position, time), self.axis))/self.T)
-    
     # Magnetic dipole with magnitude in units of (10^14 G)*km^3
-    def m(self, times: float) -> np.ndarray:
-        if isinstance(times, float):
-            psi = self.psi0 + 2*pi/self.T*times
-            return 0.5*self.B0*self.radius**3*np.array([np.sin(self.misalign)*np.sin(psi), np.sin(self.misalign)*np.cos(psi), np.cos(self.misalign)])
+    def m(self, time: float) -> np.ndarray:
+        psi = self.psi0 + 2*pi/self.T*time
+        return 0.5*self.B0*self.radius**3*np.array([np.sin(self.misalign)*np.sin(psi), np.sin(self.misalign)*np.cos(psi), np.cos(self.misalign)])
 
-        psis = self.psi0 + 2*pi/self.T*times
-        return 0.5*self.B0*self.radius**3*np.concatenate((sin(self.misalign)*np.sin(psis), sin(self.misalign)*np.cos(psis), cos(self.misalign)*np.ones(len(times)))).reshape((3, len(times))).T
+    def B(self, position: np.ndarray, time: float) -> np.ndarray:   # In units of 10^14 Gauss, just the dipole contribution
+        d = mag(position)
+        return 3*mydot(position, self.m(time))/d**5*position - self.m(time)/d**3
 
-    def B(self, positions: np.ndarray, times: float) -> np.ndarray:   # In units of 10^14 Gauss, just the dipole contribution
-        if isinstance(times, float):
-            d = mag(positions)
-            return 3*mydot(positions, self.m(times))/d**5*positions - self.m(times)/d**3
-        
-        ds = mag(positions)
-        return nums_vs(3*mydot(positions, self.m(times))/ds**5, positions) - nums_vs(1./ds**3, self.m(times))
-
-
-    def wp(self, positions: np.ndarray, times: float) -> float:  # Plasma frequency in GHz
-        if isinstance(times, float):
-            return 1.5e2*sqrt(abs(mydot(self.B(positions, times), self.axis))/self.T)
-        
-        return 1.5e2*np.sqrt(np.abs(mydot(self.B(positions, times), repeat(self.axis, len(positions)))/self.T))
+    def wp(self, position: np.ndarray, time: float) -> float:  # Plasma frequency in GHz
+        return 1.5e2*sqrt(abs(mydot(self.B(position, time), self.axis))/self.T)
     
     # Maximum radius of conversion with some padding (in percent)
     def rcmax(self, padding: float = 0.) -> float:

@@ -1,5 +1,5 @@
 import numpy as np
-from numba import float64  # import the types
+from numba import float64, int64  # import the types
 from numba.experimental import jitclass
 from scripts.basic import mag, nums_vs, repeat
 from scripts.globals import ma
@@ -9,15 +9,17 @@ spec = [
     ('velocities', float64[:,:]),
     ('accelerations', float64[:,:]),
     ('times', float64[:]),
+    ('nperiods', int64[:])
 ]
 
 @jitclass(spec)
 class Particles:
-    def __init__(self, positions=np.empty((0,3)), velocities=np.empty((0,3)), acceleration=np.zeros(3), time=0.) -> None:
+    def __init__(self, positions=np.empty((0,3)), velocities=np.empty((0,3)), acceleration=np.zeros(3), time=0., nperiod=0) -> None:
         self.positions = positions      # km
         self.velocities = velocities    # km/s
         self.accelerations = repeat(acceleration, len(positions))     # km/s^2
         self.times = np.repeat(time, len(positions))    # s
+        self.nperiods = np.repeat(nperiod, len(positions))
 
     # Kinetic energies (10^{-5}eV*(km/s)^2)
     def kin_en(self) -> np.ndarray:

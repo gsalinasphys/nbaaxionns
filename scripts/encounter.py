@@ -60,9 +60,9 @@ def selectrvs(AC: object, NS: object, nps: int, cylbnds: tuple = (-1., 1.), nsam
         vsdrawn = repeat(AC.vCM, len(rsdrawn))
         if AC.vdisptype:
             vsdrawn += np.array(list(AC.vsdisp(rsdrawn)))
-        accelerations, times = repeat(np.zeros(3), len(rsdrawn)), np.repeat(0., len(rsdrawn))
+        accelerations, times, nperiods = repeat(np.zeros(3), len(rsdrawn)), np.repeat(0., len(rsdrawn)), np.repeat(0, len(rsdrawn))
         
-        add_ps(ps, rsdrawn, vsdrawn, accelerations, times)
+        add_ps(ps, rsdrawn, vsdrawn, accelerations, times, nperiods)
         rm_far(ps, NS)
         
     return (ps.positions, ps.velocities)
