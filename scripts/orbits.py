@@ -70,13 +70,13 @@ def update_ps(p: object, NS: object, rprecision: float = 5e-2) -> None:
     p.accelerations = NS.grav_field(p.positions)
     # Update velocities again
     p.verlet(dts, False)
-    
-    # Reset clock every ten years
-    period = 10.*yr
-    if np.any(p.times > period):
-        p.times -= period
 
     p.times += dts
+    
+    # Reset clock every year
+    period = 1.*yr
+    if np.any(p.times > period):
+        p.times %= period
    
 # Full trajectories, use batches of 160 particles for max speed (maybe in general 10ncores?)
 def trajs(p: object, NS: object, rlimits: Tuple = None, rprecision: float = 5e-2) -> None:
@@ -106,7 +106,7 @@ def trajs(p: object, NS: object, rlimits: Tuple = None, rprecision: float = 5e-2
     return data
 
 # Slice into single trajectories
-def single_trajs(trajs: np.ndarray) -> np.ndarray:
+def singletrajs(trajs: np.ndarray) -> np.ndarray:
     key = lambda x: x[0]
     for data in itertools.groupby(trajs, key):
         yield np.array(list(data[1]))[:, 1:]   # Remove slicing to get tags for the particles

@@ -22,14 +22,25 @@ def mag(vs: np.ndarray) -> np.ndarray:
     
     return np.sqrt(np.sum(vs**2, axis = 1))
 
-# Dot product, faster than Numpy's np.dot for smaller vectors
+# # Dot product, faster than Numpy's np.dot for smaller vectors
+# @njit
+# def mydot(v1: np.ndarray, v2: np.ndarray) -> float:
+#     prods = np.empty_like(v1)
+#     for ii in range(len(v1)):
+#         prods[ii] = v1[ii]*v2[ii]
+        
+#     return sum(prods)
+
 @njit
 def mydot(v1: np.ndarray, v2: np.ndarray) -> float:
-    prods = np.empty_like(v1)
-    for ii in range(len(v1)):
-        prods[ii] = v1[ii]*v2[ii]
+    if v1.ndim == 1:
+        prods = np.empty_like(v1)
+        for ii in range(len(v1)):
+            prods[ii] = v1[ii]*v2[ii]
         
-    return sum(prods)
+        return sum(prods)
+    
+    return np.sum(v1*v2, axis=1)
         
 # Linear combination of vectors with coefficients given by numbers
 @njit

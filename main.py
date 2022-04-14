@@ -8,7 +8,7 @@ from numba import njit
 from classes import AxionMiniclusterNFW, NeutronStar, Particles
 from scripts import (cylmax, energy, grav_en, mag, metropolis, min_approach,
                      plot_trajs, randdir3d, randdirs3d, rc, rdistr, repeat,
-                     rm_far, roche, selectrvs, single_trajs, trajAC, trajs,
+                     rm_far, roche, selectrvs, singletrajs, trajAC, trajs,
                      update_ps)
 
 
@@ -43,7 +43,8 @@ Concentration:              {O.c}
 def runtrajs(nps: int, b: float, vin: np.ndarray, 
              ACparams: tuple = (1, 1., 1.55, 100., 1), lbounds: tuple = (-1., 1.),
              NSparams: tuple = (1.,10.,1.,np.array([1.,0.,1.]),1.,0.,0.),
-             rprecision: float = 5e-2) -> np.ndarray:
+             rprecision: float = 5e-2,
+             padding: float = 10.) -> np.ndarray:
     if ACparams[0]:
         ACmass, delta, c, vdisptype = ACparams[1:]
         AC = AxionMiniclusterNFW(mass=ACmass, delta=delta, c=c, vdisptype=vdisptype)
@@ -59,7 +60,7 @@ def runtrajs(nps: int, b: float, vin: np.ndarray,
     rvsinps = selectrvs(AC, NS, nps, lbounds)
     ps = Particles(rvsinps[0], rvsinps[1])
     
-    return trajs(ps, NS, rlimits=(NS.radius, NS.rcmax()), rprecision=rprecision)
+    return trajs(ps, NS, rlimits=(NS.radius, NS.rcmax(padding)), rprecision=rprecision)
 
 def main() -> None:
     start = time.perf_counter()

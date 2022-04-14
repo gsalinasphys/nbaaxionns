@@ -7,5 +7,5 @@ from scripts.metropolis import (cyldistr, metropolis, proposal, rdistr, rincyl,
                                 stepdistr)
 from scripts.orbits import (add_ps, energy, grav_en, min_approach,
                             min_approach_sim, plot_traj, plot_trajs, rm_far,
-                            rm_ps, single_trajs, smoothtraj, torder, trajs,
+                            rm_ps, singletrajs, smoothtraj, torder, trajs,
                             update_ps)
