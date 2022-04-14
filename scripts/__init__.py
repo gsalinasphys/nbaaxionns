@@ -1,4 +1,4 @@
-from scripts.basic import (cases, heav, mag, mydot, nums_vs, randdir2d,
+from scripts.basic import (cases, heav, id_gen, mag, mydot, nums_vs, randdir2d,
                            randdir3d, randdirs2d, randdirs3d, repeat, step,
                            zeroat)
 from scripts.conversion import allhits, conv_surf, hits, rc

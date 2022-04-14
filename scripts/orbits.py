@@ -83,7 +83,7 @@ def update_ps(p: object, NS: object, rprecision: float = 5e-2) -> None:
         p.times %= period
    
 # Full trajectories, use batches of 160 particles for max speed (maybe in general 10ncores?)
-def trajs(p: object, NS: object, rlimits: Tuple = None, rprecision: float = 5e-2) -> None:
+def trajs(p: object, NS: object, rlimits: Tuple = None, rprecision: float = 5e-2, fname: str = None) -> None:
     finished = False
     
     data = [[] for i in range(9)]
@@ -107,7 +107,10 @@ def trajs(p: object, NS: object, rlimits: Tuple = None, rprecision: float = 5e-2
 
     data = np.array(data).T
     data = data[data[:, 0].argsort()]
-        
+    
+    if fname is not None:
+        np.save(outdir + fname, data)
+    
     return data
 
 # Slice into single trajectories

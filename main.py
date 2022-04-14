@@ -6,10 +6,10 @@ import numpy as np
 from numba import njit
 
 from classes import AxionMiniclusterNFW, NeutronStar, Particles
-from scripts import (cylmax, energy, grav_en, mag, metropolis, min_approach,
-                     plot_trajs, randdir3d, randdirs3d, rc, rdistr, repeat,
-                     rm_far, roche, selectrvs, singletrajs, trajAC, trajs,
-                     update_ps)
+from scripts import (allhits, cylmax, energy, grav_en, id_gen, mag, metropolis,
+                     min_approach, outdir, plot_trajs, randdir3d, randdirs3d,
+                     rc, rdistr, repeat, rm_far, roche, selectrvs, singletrajs,
+                     trajAC, trajs, update_ps)
 
 
 # Separate __repr__ functions,as Numba does not allow for them
@@ -40,11 +40,11 @@ Concentration:              {O.c}
 
 
 
-def runtrajs(nps: int, b: float, vin: np.ndarray, 
+def run(nps: int, b: float, vin: np.ndarray, 
              ACparams: tuple = (1, 1., 1.55, 100., 1), lbounds: tuple = (-1., 1.),
              NSparams: tuple = (1.,10.,1.,np.array([1.,0.,1.]),1.,0.,0.),
-             rprecision: float = 5e-2,
-             padding: float = 10.) -> np.ndarray:
+             rprecision: float = 5e-2, padding: float = 10.,
+             fnametrajs: str = None, fnamehits: str = None) -> np.ndarray:
     if ACparams[0]:
         ACmass, delta, c, vdisptype = ACparams[1:]
         AC = AxionMiniclusterNFW(mass=ACmass, delta=delta, c=c, vdisptype=vdisptype)
@@ -54,28 +54,51 @@ def runtrajs(nps: int, b: float, vin: np.ndarray,
     
     rvsin = np.array([b*AC.rtrunc(), 0., 1e16]), vin
     pAC = Particles(np.array([rvsin[0]]), np.array([rvsin[1]]))
-    trajAC(pAC, NS, roche(AC, NS))
+    trajAC(pAC, NS, roche(AC, NS), rprecision)
     AC.rCM, AC.vCM = pAC.positions[0], pAC.velocities[0]
     
     rvsinps = selectrvs(AC, NS, nps, lbounds)
     ps = Particles(rvsinps[0], rvsinps[1])
     
-    return trajs(ps, NS, rlimits=(NS.radius, NS.rcmax(padding)), rprecision=rprecision)
+    simtrajs = trajs(ps, NS, (NS.radius, NS.rcmax(padding)), rprecision, fnametrajs)
+    simtrajs = [np.array(simtraj) for simtraj in list(singletrajs(simtrajs))]
+    
+    ahits = list(allhits(NS, simtrajs))
+    ahits = np.array([hit for subhits in ahits for hit in subhits])
+    
+    if fnamehits is not None:
+        np.save(outdir + fnamehits, ahits)
+        
+    return ahits
 
 def main() -> None:
     start = time.perf_counter()
     
+    nps = 160
     b = 0.2
     vin = np.array([0., 0., -200.])
-    nps = 160
-    lbounds = (-1./10, 1./10)
+    ACparams = (1, 1., 1.55, 100., 1)
+    lbounds = (-1., 1.)
+    NSparams = (1.,10.,1.,np.array([1.,0.,1.]),1.,0.,0.)
+    rprecision = 5e-2
+    padding = 10.
+    ACshort = 'MC' if ACparams[0] else 'AS'
+    id = id_gen()
+    fnametrajs = ACshort + id + '_trajs'
+    fnamehits = ACshort + id + '_conversion'
     
     ncores = mp.cpu_count() - 1
     with mp.Pool(processes=ncores) as pool:
-        result = pool.starmap(runtrajs, [(nps, b, vin, lbounds) for _ in range(2*ncores)])
+        result = pool.starmap(run, [(nps, b, vin, ACparams, lbounds,
+                                     NSparams, rprecision, padding,
+                                     fnametrajs+f'{ii}' if fnametrajs is not None else None, 
+                                     fnamehits+f'{ii}' if fnamehits is not None else None)
+                                    for ii in range(200*ncores)])
         pool.close()
         pool.join()
     
+    result = np.concatenate(result)
+    print(result)
     
     end = time.perf_counter()
     print("Run time: ", np.round(end - start, 2))

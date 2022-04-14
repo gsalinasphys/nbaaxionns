@@ -1,4 +1,5 @@
 import random
+import string
 from math import pi, sqrt
 from typing import Generator
 
@@ -107,3 +108,6 @@ def randdirs3d(n: int) -> Generator:
 def zeroat(v: np.ndarray) -> np.ndarray:
     prods = v[1:]*v[:-1]
     return np.where(prods < 0)[0]
+
+def id_gen(size=6, chars=string.ascii_uppercase):
+    return ''.join(random.choice(chars) for _ in range(size))
