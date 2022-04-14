@@ -41,45 +41,17 @@ def add_ps(p: object, positions: np.ndarray, velocities: np.ndarray, acceleratio
         p.velocities = np.concatenate((p.velocities, velocities))
         p.accelerations = np.concatenate((p.accelerations, accelerations))
         p.times = np.append(p.times, times)
-    
-# # Remove particles by their indices
-# @njit
-# def rm_ps(p: object, inds: int) -> None:
-#     tokeep = np.empty(len(p.positions)-len(inds), dtype=np.int64)
-#     removed = 0
-#     for ii in range(len(p.positions)):
-#         if ii not in inds:
-#             tokeep[ii-removed] = ii
-#         else:
-#             removed += 1
 
-#     p.positions = p.positions[tokeep]
-#     p.velocities = p.velocities[tokeep]
-#     p.accelerations = p.accelerations[tokeep]
-#     p.times = p.times[tokeep]
+# Remove particles that are not gonna reach rcmax
+def rm_far(p: object, NS: object) -> None:
+    rm_ps(p, np.where(min_approach(p, NS) > NS.rcmax())[0])
     
 # Remove particles by their indices
-@njit
 def rm_ps(p: object, inds: int) -> None:
-    nps = len(p.positions)
-    indsfl = np.concatenate((3*inds, 3*inds+1, 3*inds+2))    
-    
-    p.positions = np.delete(p.positions, indsfl).reshape((nps-len(inds),3))
-    p.velocities = np.delete(p.velocities, indsfl).reshape((nps-len(inds),3))
-    p.accelerations = np.delete(p.accelerations, indsfl).reshape((nps-len(inds),3))
+    p.positions = np.delete(p.positions, inds, axis=0)
+    p.velocities = np.delete(p.velocities, inds, axis=0)
+    p.accelerations = np.delete(p.accelerations, inds, axis=0)
     p.times = np.delete(p.times, inds)
-
-# Remove particles that are not gonna reach rmax
-@njit
-def rm_far(p: object, NS: object, rmax: float) -> None:
-    rm_ps(p, np.where(min_approach(p, NS) > rmax)[0])
-    
-# # Remove particles by their indices
-# def rm_ps(p: object, inds: int) -> None:
-#     p.positions = np.delete(p.positions, inds, axis=0)
-#     p.velocities = np.delete(p.velocities, inds, axis=0)
-#     p.accelerations = np.delete(p.accelerations, inds, axis=0)
-#     p.times = np.delete(p.times, inds)
 
 # Implementation of Verlet's method to update position and velocity (for reference, see Velocity Verlet in https://en.m.wikipedia.org/wiki/Verlet_integration)
 @njit
@@ -105,38 +77,6 @@ def update_ps(p: object, NS: object, rprecision: float = 5e-2) -> None:
         p.times -= period
 
     p.times += dts
-
-# # Full trajectories, use batches of 160 particles for max speed (maybe in general 10ncores?)
-# @njit
-# def trajs(p: object, NS: object, rlimits: Tuple = None, rprecision: float = 5e-2, maxdata: int = 100_000) -> None:
-#     data = np.empty((maxdata,8))
-    
-#     finished, ndata = False, 0
-#     while not finished or min(mag(p.positions)) < rlimits[1]:
-#         if min(mag(p.positions)) < rlimits[1]:
-#             finished = True
-            
-#         ps_in = np.where(np.logical_and(mag(p.positions) > rlimits[0], mag(p.positions) < rlimits[1]))[0]
-#         # Save in the format [tags, times, rx, ry, rz, vx, vy, vz]
-        
-#         for ii in range(len(ps_in)):
-#             data[ndata+ii, 0] = ps_in[ii]
-#             data[ndata+ii, 1] = p.times[ps_in][ii]
-#             data[ndata+ii, 2] = p.positions.T[0][ps_in][ii]
-#             data[ndata+ii, 3] = p.positions.T[1][ps_in][ii]
-#             data[ndata+ii, 4] = p.positions.T[2][ps_in][ii]
-#             data[ndata+ii, 5] = p.velocities.T[0][ps_in][ii]
-#             data[ndata+ii, 6] = p.velocities.T[1][ps_in][ii]
-#             data[ndata+ii, 7] = p.velocities.T[2][ps_in][ii]
-        
-#         update_ps(p, NS, rprecision=rprecision)
-        
-#         ndata = ndata + len(ps_in)
-
-#     data = data[:ndata]
-#     data = data[data[:, 0].argsort()]
-
-#     return data
    
 # Full trajectories, use batches of 160 particles for max speed (maybe in general 10ncores?)
 def trajs(p: object, NS: object, rlimits: Tuple = None, rprecision: float = 5e-2) -> None:

@@ -88,6 +88,9 @@ class AxionMiniclusterNFW:
         return 1e-5*sqrt(G*self.encl_mass(position)/mag(rstoCM)) * heav(self.rtrunc()-mag(rstoCM), 1.)
 
     def deltav(self, prec: int = 100_000) -> float:
+        if not self.vdisptype:
+            return 0.
+        
         rs = np.linspace(1e-8, 1., prec)*self.rtrunc()
         vscirc = np.empty_like(rs)
         for ii in range(prec):
@@ -106,17 +109,8 @@ class AxionMiniclusterNFW:
                     found = True
         
         return mag(v_try)*randdir3d()
-   
+    
     # Velocity dispersion for many positions inside the minicluster
     def vsdisp(self, positions: np.ndarray) -> np.ndarray:
-        vsdisp = np.empty((len(positions), 3))
         for ii in range(len(positions)):
-            for jj in range(3):
-                vsdisp[ii,jj] = self.vdisp(positions[ii])[jj]
-            
-        return vsdisp
-    
-    # # Velocity dispersion for many positions inside the minicluster
-    # def vsdisp(self, positions: np.ndarray) -> np.ndarray:
-    #     for ii in range(len(positions)):
-    #         yield self.vdisp(positions[ii])
+            yield self.vdisp(positions[ii])

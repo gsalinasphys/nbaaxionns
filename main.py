@@ -41,8 +41,8 @@ Concentration:              {O.c}
 
 
 def runtrajs(nps: int, b: float, vin: np.ndarray, 
-             NSparams: tuple = (1.,10.,1.,np.array([1.,0.,1.]),1.,0.,0.),
              ACparams: tuple = (1, 1., 1.55, 100., 1), lbounds: tuple = (-1., 1.),
+             NSparams: tuple = (1.,10.,1.,np.array([1.,0.,1.]),1.,0.,0.),
              rprecision: float = 5e-2) -> np.ndarray:
     if ACparams[0]:
         ACmass, delta, c, vdisptype = ACparams[1:]
@@ -56,8 +56,7 @@ def runtrajs(nps: int, b: float, vin: np.ndarray,
     trajAC(pAC, NS, roche(AC, NS))
     AC.rCM, AC.vCM = pAC.positions[0], pAC.velocities[0]
     
-    cylbounds = ((0., cylmax(AC, NS)), (lbounds[0], lbounds[1]))
-    rvsinps = selectrvs(AC, NS, nps, NS.rcmax(), cylbounds, ps=Particles())
+    rvsinps = selectrvs(AC, NS, nps, lbounds)
     ps = Particles(rvsinps[0], rvsinps[1])
     
     return trajs(ps, NS, rlimits=(NS.radius, NS.rcmax()), rprecision=rprecision)
@@ -68,12 +67,11 @@ def main() -> None:
     b = 0.2
     vin = np.array([0., 0., -200.])
     nps = 160
-    lbounds = (-1., 1.)
-    rprecision = 5e-2
+    lbounds = (-1./10, 1./10)
     
     ncores = mp.cpu_count() - 1
     with mp.Pool(processes=ncores) as pool:
-        result = pool.starmap(runtrajs, [(nps, b, vin) for _ in range(2*ncores)])
+        result = pool.starmap(runtrajs, [(nps, b, vin, lbounds) for _ in range(2*ncores)])
         pool.close()
         pool.join()
     

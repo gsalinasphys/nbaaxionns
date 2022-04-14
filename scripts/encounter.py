@@ -30,88 +30,39 @@ def trajAC(pAC: object, NS: object, rmin: float, rprecision: float = 5e-2) -> No
         
         update_ps(pAC, NS, rprecision=rprecision)
 
+@njit
+def bmax(AC: object, NS: object) -> float:
+    return sqrt(NS.rcmax()**2 + 2*G*NS.mass*NS.rcmax()/mag(AC.vCM)**2)
+
 # Safe cylinder radius to draw particles from
 @njit
-def cylmax(AC: object, NS: object):
+def cylmax(AC: object, NS: object) -> float:
+    if not AC.vdisptype:
+        return bmax(AC, NS)/AC.rtrunc()
+    
     rtry = AC.deltav()*roche(AC, NS) / (mag(AC.vCM)*AC.rtrunc())
     if rtry < AC.rtrunc():
-        return rtry
+        return max((rtry, bmax(AC, NS)/AC.rtrunc()))
     
     return AC.rtrunc()
 
-# # Select initial conditions that will hit close to the neutron star
-# @njit
-# def selectrvs(AC: object, NS: object, nps: int, rmax: float, cylbnds: tuple = ((0., 1.), (0., 1.)), nsamples: int = 1_000_000, ps: object = Particles()) -> np.ndarray:
-#     zcyl, L = 0.5*cylbnds[1][0]+0.5*cylbnds[1][1], cylbnds[1][1]-cylbnds[1][0]
-#     rcyl, drcyl = 0.5*cylbnds[0][0]+0.5*cylbnds[0][1], cylbnds[0][1]-cylbnds[0][0]
-    
-#     while len(ps.positions) < nps:
-#         rs = metropolis(rincyl, nsamples, x0=np.append(rcyl*randdir2d(), zcyl),
-#                         sigma=np.array([drcyl/10., drcyl/10., 0.1*L]),
-#                         xbounds=cylbnds, O=AC)
-#         rsdrawn = np.empty((nsamples,3))
-#         for ii, r in enumerate(rs):
-#             for jj in range(3):
-#                 rsdrawn[ii, jj] = AC.rtrunc()*r[jj]
-        
-#         rsdrawn += AC.rCM*np.array([0.,0.,1.])
-#         # rsdrawn = AC.rCM*np.array([0.,0.,1.]) + AC.rtrunc()*np.array(list(rs))
-        
-#         vsdrawn = repeat(AC.vCM, len(rsdrawn))
-#         if AC.vdisptype:
-#             vsdisp = np.empty_like(vsdrawn)
-#             mygen = AC.vsdisp(rsdrawn)
-#             for ii, vdisp in enumerate(mygen):
-#                 for jj in range(3):
-#                     vsdisp[ii, jj] = vdisp[jj]
-#             # vsdrawn += np.array(list(AC.vsdisp(rsdrawn)))
-#         accelerations, times = repeat(np.zeros(3), len(rsdrawn)), np.repeat(0., len(rsdrawn))
-        
-#         add_ps(ps, rsdrawn, vsdrawn, accelerations, times)
-#         rm_far(ps, NS, rmax)
-        
-#     return (ps.positions, ps.velocities)
-
 # Select initial conditions that will hit close to the neutron star
-@njit
-def selectrvs(AC: object, NS: object, nps: int, rmax: float, cylbnds: tuple = ((0., 1.), (0., 1.)), nsamples: int = 1_000_000, ps: object = Particles()) -> np.ndarray:
-    zcyl, L = 0.5*cylbnds[1][0]+0.5*cylbnds[1][1], cylbnds[1][1]-cylbnds[1][0]
-    rcyl, drcyl = 0.5*cylbnds[0][0]+0.5*cylbnds[0][1], cylbnds[0][1]-cylbnds[0][0]
-
+def selectrvs(AC: object, NS: object, nps: int, cylbnds: tuple = (-1., 1.), nsamples: int = 1_000_000) -> np.ndarray:
+    zcyl, L = 0.5*cylbnds[0]+0.5*cylbnds[1], cylbnds[1]-cylbnds[0]
+    
+    ps = Particles(np.empty((0,1)), np.empty((0,1)))
     while len(ps.positions) < nps:
-        rs = metropolis(rincyl, nsamples, x0=np.append(rcyl*randdir2d(), zcyl),
-                        sigma=np.array([drcyl/10., drcyl/10., 0.1*L]),
-                        xbounds=cylbnds, O=AC)
-        rsdrawn = AC.rCM*np.array([0.,0.,1.]) + AC.rtrunc()*rs
-
+        rs = metropolis(rincyl, nsamples, x0=np.append(0.1*cylmax(AC, NS)*randdir2d(), zcyl),
+                        sigma=np.array([cylmax(AC, NS)/10., cylmax(AC, NS)/10., 0.1*L]),
+                        xbounds=((0., cylmax(AC, NS)), cylbnds), O=AC)
+        rsdrawn = AC.rCM*np.array([0.,0.,1.]) + AC.rtrunc()*np.array(list(rs))
+        
         vsdrawn = repeat(AC.vCM, len(rsdrawn))
         if AC.vdisptype:
-            vsdrawn += AC.vsdisp(rsdrawn)
+            vsdrawn += np.array(list(AC.vsdisp(rsdrawn)))
         accelerations, times = repeat(np.zeros(3), len(rsdrawn)), np.repeat(0., len(rsdrawn))
         
         add_ps(ps, rsdrawn, vsdrawn, accelerations, times)
-        rm_far(ps, NS, rmax)
+        rm_far(ps, NS)
         
     return (ps.positions, ps.velocities)
-
-# # Select initial conditions that will hit close to the neutron star
-# def selectrvs(AC: object, NS: object, nps: int, rmax: float, cylbnds: tuple = ((0., 1.), (0., 1.)), nsamples: int = 1_000_000) -> np.ndarray:
-#     zcyl, L = 0.5*cylbnds[1][0]+0.5*cylbnds[1][1], cylbnds[1][1]-cylbnds[1][0]
-#     rcyl, drcyl = 0.5*cylbnds[0][0]+0.5*cylbnds[0][1], cylbnds[0][1]-cylbnds[0][0]
-    
-#     ps = Particles(np.empty((0,1)), np.empty((0,1)))
-#     while len(ps.positions) < nps:
-#         rs = metropolis(rincyl, nsamples, x0=np.append(rcyl*randdir2d(), zcyl),
-#                         sigma=np.array([drcyl/10., drcyl/10., 0.1*L]),
-#                         xbounds=cylbnds, O=AC)
-#         rsdrawn = AC.rCM*np.array([0.,0.,1.]) + AC.rtrunc()*np.array(list(rs))
-        
-#         vsdrawn = repeat(AC.vCM, len(rsdrawn))
-#         if AC.vdisptype:
-#             vsdrawn += np.array(list(AC.vsdisp(rsdrawn)))
-#         accelerations, times = repeat(np.zeros(3), len(rsdrawn)), np.repeat(0., len(rsdrawn))
-        
-#         add_ps(ps, rsdrawn, vsdrawn, accelerations, times)
-#         rm_far(ps, NS, rmax)
-        
-#     return (ps.positions, ps.velocities)

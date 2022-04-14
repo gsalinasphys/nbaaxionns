@@ -21,41 +21,11 @@ def proposal(x: float, sigma: float = 0.1) -> float:
         
     return toret
 
-# # Metropolis–Hastings algorithm for sampling from a probability distribution
-# @njit
-# def metropolis(pdistr: Callable, n: int, x0: float = 0.5, sigma: float = 0.1, xbounds: tuple = (0., 1.), O: object = EmptyClass()) -> Generator:
-#     x = x0 # start somewhere
-#     for _ in range(n):
-#         trial = proposal(x, sigma=sigma) # random neighbor from the proposal distribution
-#         acceptance = pdistr(trial, xbounds, O)/pdistr(x, xbounds, O)
-        
-#         # accept the move conditionally
-#         if random.random() < acceptance:
-#             x = trial
-
-#         yield x
-        
 # Metropolis–Hastings algorithm for sampling from a probability distribution
 @njit
 def metropolis(pdistr: Callable, n: int, x0: float = 0.5, sigma: float = 0.1, xbounds: tuple = (0., 1.), O: object = EmptyClass()) -> Generator:
-    if isinstance(x0, float):
-        xs = np.empty(n)
-        x = x0 # start somewhere
-        for ii in range(n):
-            trial = proposal(x, sigma=sigma) # random neighbor from the proposal distribution
-            acceptance = pdistr(trial, xbounds, O)/pdistr(x, xbounds, O)
-            
-            # accept the move conditionally
-            if random.random() < acceptance:
-                x = trial
-
-            xs[ii] = x
-            
-        return xs
-    
-    xs = np.empty((n, len(x0)))
     x = x0 # start somewhere
-    for ii in range(n):
+    for _ in range(n):
         trial = proposal(x, sigma=sigma) # random neighbor from the proposal distribution
         acceptance = pdistr(trial, xbounds, O)/pdistr(x, xbounds, O)
         
@@ -63,12 +33,7 @@ def metropolis(pdistr: Callable, n: int, x0: float = 0.5, sigma: float = 0.1, xb
         if random.random() < acceptance:
             x = trial
 
-        for jj in range(len(x)):
-            xs[ii, jj] = x[jj]
-        
-    return xs
-    
-    
+        yield x
 
 # Step distribution in any number of dimensions
 @njit
