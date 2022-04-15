@@ -1,11 +1,13 @@
 from itertools import chain
 from typing import Generator
 
+import matplotlib.pyplot as plt
 import numpy as np
+from mpl_toolkits.mplot3d import Axes3D
 from scipy.optimize import brentq, root_scalar
 
 from scripts.basic import mag, nums_vs, randdirs3d, repeat, zeroat
-from scripts.globals import maGHz
+from scripts.globals import maGHz, outdir
 from scripts.orbits import smoothtraj
 
 
@@ -23,7 +25,7 @@ def rc(NS: object, position: np.ndarray, time: float, exact: bool = False) -> fl
         # print("Error in rc determination (root finding): ", e)
         return None
 
-def conv_surf(NS: object, time: float, nsamples: int = 10_000, exact: bool = False) -> Generator:    
+def conv_surf(NS: object, time: float, nsamples: int = 100_000, exact: bool = False) -> Generator:    
     for dir in randdirs3d(nsamples):
         rcii = rc(NS, dir, time, exact=exact)
         if rcii is not None:
@@ -57,6 +59,17 @@ def hits(NS: object, traj: np.ndarray, pprecision: int = 100) -> np.ndarray:
         
     return sols
 
-def allhits(NS: object, trajs: np.ndarray, pprecision: int = 100) -> np.ndarray:
+def allhits(NS: object, trajs: np.ndarray, pprecision: int = 500) -> np.ndarray:
     for ii, traj in enumerate(trajs):
         yield [[ii] + hit for hit in hits(NS, traj, pprecision)]
+        
+def plot_hits(ahits: np.ndarray, eventname: str, nmax: int = 100_000) -> None:
+    X, Y, Z = np.array(ahits)[:nmax].T[2:5]
+    ax = plt.axes(projection='3d')
+    ax.scatter3D(X, Y, Z, c='b', s=1e-2)
+    ax.set_xlabel('$x$ (km)')
+    ax.set_ylabel('$y$ (km)')
+    ax.set_zlabel('$z$ (km)')
+
+    plt.savefig(outdir + eventname + '/' + eventname + 'conversion.png')
+    plt.close()

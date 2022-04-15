@@ -26,7 +26,7 @@ class NeutronStar:
         self.T = T                  # Period of rotation (seconds)
         self.axis = axis            # Axis of rotation
         self.B0 = B0                # Magnetic field at the surface (10^14 G)
-        self.misalign = misalign    # Misalignement angle
+        self.misalign = misalign    # Misalignment angle
         self.psi0 = psi0            # Initial azimuthal angle
     
     # Neutron star's gravitational field (km/s^2) at given positions
@@ -66,7 +66,7 @@ class NeutronStar:
     # Magnetic dipole with magnitude in units of (10^14 G)*km^3
     def m(self, time: float) -> np.ndarray:
         psi = self.psi0 + 2*pi/self.T*time
-        return 0.5*self.B0*self.radius**3*np.array([np.sin(self.misalign)*np.sin(psi), np.sin(self.misalign)*np.cos(psi), np.cos(self.misalign)])
+        return 0.5*self.B0*self.radius**3*np.array([sin(self.misalign)*sin(psi), sin(self.misalign)*cos(psi), cos(self.misalign)])
 
     def B(self, position: np.ndarray, time: float) -> np.ndarray:   # In units of 10^14 Gauss, just the dipole contribution
         d = mag(position)

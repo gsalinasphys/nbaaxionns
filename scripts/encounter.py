@@ -1,4 +1,3 @@
-from functools import cache
 from math import pi, sqrt, tan
 from typing import Callable
 
@@ -46,12 +45,31 @@ def cylmax(AC: object, NS: object) -> float:
     
     return AC.rtrunc()
 
+@njit
+def massincyl(AC: object, cylbounds: tuple, precision: int = 500) -> float:
+    rbounds, lbounds = cylbounds
+    zs = AC.rCM[2] + AC.rtrunc()*np.linspace(lbounds[0], lbounds[1], precision)
+    xs, ys = AC.rtrunc()*np.linspace(-rbounds[1], rbounds[1], precision), AC.rtrunc()*np.linspace(-rbounds[1], rbounds[1], precision)
+    dx, dy, dz = xs[1]-xs[0], ys[1]-ys[0], zs[1]-zs[0]
+    
+    mass = 0.
+    for ii in range(len(xs)):
+        for jj in range(len(ys)):
+            for kk in range(len(zs)):
+                if AC.rtrunc()*rbounds[0] < sqrt(xs[ii]**2+ys[jj]**2) < AC.rtrunc()*rbounds[1]:
+                    mass += AC.rho_prf(np.array([xs[ii], ys[jj], zs[kk]]))*dx*dy*dz
+                
+    return mass
+
 # Select initial conditions that will hit close to the neutron star
 def selectrvs(AC: object, NS: object, nps: int, cylbnds: tuple = (-1., 1.), nsamples: int = 1_000_000) -> np.ndarray:
     zcyl, L = 0.5*cylbnds[0]+0.5*cylbnds[1], cylbnds[1]-cylbnds[0]
     
     ps = Particles(np.empty((0,1)), np.empty((0,1)))
+    ndrawn = 0
     while len(ps.positions) < nps:
+        ndrawn += nsamples
+        
         rs = metropolis(rincyl, nsamples, x0=np.append(0.1*cylmax(AC, NS)*randdir2d(), zcyl),
                         sigma=np.array([cylmax(AC, NS)/10., cylmax(AC, NS)/10., 0.1*L]),
                         xbounds=((0., cylmax(AC, NS)), cylbnds), O=AC)
@@ -65,4 +83,4 @@ def selectrvs(AC: object, NS: object, nps: int, cylbnds: tuple = (-1., 1.), nsam
         add_ps(ps, rsdrawn, vsdrawn, accelerations, times, nperiods)
         rm_far(ps, NS)
         
-    return (ps.positions, ps.velocities)
+    return (ps.positions, ps.velocities), ndrawn

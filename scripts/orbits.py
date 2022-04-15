@@ -149,11 +149,11 @@ def plot_traj(traj: np.ndarray, show: bool = False) -> None:
         plt.show()
     
 # Plot trajectories
-def plot_trajs(trajs: np.ndarray, NS: object, fname: str = None, show: bool = False) -> None:
+def plot_trajs(trajs: np.ndarray, NS: object, fname: str = None, nmax: int = 1_000, show: bool = False) -> None:
     ax = plt.axes()
     ax.set_aspect('equal')
 
-    for traj in trajs:
+    for traj in trajs[:nmax]:
         ax.scatter(traj.T[3], traj.T[1], s=1e-2)
         
     circle = plt.Circle((0, 0), NS.radius, facecolor='purple', alpha = 0.5)
@@ -167,3 +167,5 @@ def plot_trajs(trajs: np.ndarray, NS: object, fname: str = None, show: bool = Fa
     
     if show:
         plt.show()
+        
+    plt.close()

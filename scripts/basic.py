@@ -1,6 +1,6 @@
 import random
 import string
-from math import pi, sqrt
+from math import cos, pi, sin, sqrt
 from typing import Generator
 
 import numpy as np
@@ -74,7 +74,7 @@ def cases(cond: np.ndarray, inside: np.ndarray, outside: np.ndarray):
 def randdir2d(center: float = 0., delta: float = pi) -> np.ndarray:
     delta = min(delta, pi)
     theta = random.uniform(center-delta, center+delta)
-    return np.array([np.cos(theta), np.sin(theta)])
+    return np.array([cos(theta), sin(theta)])
 
 @njit
 def randdirs2d(n: int, center: float = 0., delta: float = pi) -> Generator:
@@ -108,6 +108,3 @@ def randdirs3d(n: int) -> Generator:
 def zeroat(v: np.ndarray) -> np.ndarray:
     prods = v[1:]*v[:-1]
     return np.where(prods < 0)[0]
-
-def id_gen(size=6, chars=string.ascii_uppercase):
-    return ''.join(random.choice(chars) for _ in range(size))

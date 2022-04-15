@@ -74,7 +74,7 @@ class AxionMiniclusterNFW:
         return cases(ds-self.rtrunc(),
                     4*pi*self.rho_s()*self.rs()**3*(np.log((ds + self.rs())/self.rs())-ds/(ds + self.rs())),
                     self.mass)
-
+        
     # Escape velocity in km/s
     def vesc(self, position: np.ndarray) -> float:
         return sqrt(abs(2*self.grav_pot(position)))
