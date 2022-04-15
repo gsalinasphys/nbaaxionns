@@ -53,7 +53,8 @@ Impact parameter:           {O[2]:.2e} km
 Roche radius:               {O[3]:.2e} km
 Position at Roche radius:   [{O[4][0]:.2e}, {O[4][1]:.2e}, {O[4][2]:.2e}] km
 Velocity at Roche radius:   [{O[5][0]:.2e}, {O[5][1]:.2e}, {O[5][2]:.2e}] km/s
-Sampling cylinder:          R = {O[6]:.2e} km, z = {O[7]:.2e} + [{O[8][0]:.2e}, {O[8][1]:.2e}] km
+Sampling cylinder:          R = {O[6]:.2e} km,
+                            z = {O[7]:.2e} + [{O[8][0]:.2e}, {O[8][1]:.2e}] km
 Axions per trajectory:      {O[9]:.2e}
 """
         )

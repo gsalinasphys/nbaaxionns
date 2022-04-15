@@ -29,11 +29,12 @@ def trajAC(pAC: object, NS: object, rmin: float, rprecision: float = 5e-2) -> No
         
         update_ps(pAC, NS, rprecision=rprecision)
 
+# Maximum impact parameter to reach neutron star without velocity dispersion
 @njit
 def bmax(AC: object, NS: object) -> float:
     return sqrt(NS.rcmax()**2 + 2*G*NS.mass*NS.rcmax()/mag(AC.vCM)**2)
 
-# Safe cylinder radius to draw particles from
+# Safe cylinder radius to draw particles
 @njit
 def cylmax(AC: object, NS: object) -> float:
     if not AC.vdisptype:
@@ -45,6 +46,7 @@ def cylmax(AC: object, NS: object) -> float:
     
     return AC.rtrunc()
 
+# Total mass inside sampling cylinder
 @njit
 def massincyl(AC: object, cylbounds: tuple, precision: int = 500) -> float:
     rbounds, lbounds = cylbounds

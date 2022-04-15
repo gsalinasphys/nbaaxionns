@@ -11,7 +11,8 @@ from scripts.globals import maGHz, outdir
 from scripts.orbits import smoothtraj
 
 
-def rc(NS: object, position: np.ndarray, time: float, exact: bool = False) -> float:    # Estimated conversion radius in some direction
+# Estimated conversion radius
+def rc(NS: object, position: np.ndarray, time: float, exact: bool = False) -> float:
     dir = position/mag(position)
     if not exact:
         def to_min(x: float) -> float:
@@ -25,6 +26,7 @@ def rc(NS: object, position: np.ndarray, time: float, exact: bool = False) -> fl
         # print("Error in rc determination (root finding): ", e)
         return None
 
+# Points on conversion surface
 def conv_surf(NS: object, time: float, nsamples: int = 100_000, exact: bool = False) -> Generator:    
     for dir in randdirs3d(nsamples):
         rcii = rc(NS, dir, time, exact=exact)

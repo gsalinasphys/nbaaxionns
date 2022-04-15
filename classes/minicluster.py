@@ -87,6 +87,7 @@ class AxionMiniclusterNFW:
         rstoCM = position - self.rCM
         return 1e-5*sqrt(G*self.encl_mass(position)/mag(rstoCM)) * heav(self.rtrunc()-mag(rstoCM), 1.)
 
+    # Maximum value of velocity dispersion
     def deltav(self, prec: int = 100_000) -> float:
         if not self.vdisptype:
             return 0.
