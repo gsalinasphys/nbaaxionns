@@ -3,6 +3,7 @@ from typing import Generator
 
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib import markers
 from mpl_toolkits.mplot3d import Axes3D
 from scipy.optimize import brentq, root_scalar
 
@@ -35,7 +36,7 @@ def conv_surf(NS: object, time: float, nsamples: int = 100_000, exact: bool = Fa
 
 # Find positions at which trajectory crosses neutron star conversion surface
 def hits(NS: object, traj: np.ndarray, pprecision: int = 100) -> np.ndarray:
-    smthtraj = smoothtraj(traj)
+    smthtraj = smoothtraj(traj, NS.T)
     tmin, tmax = min(traj.T[0]), max(traj.T[0])
     ts = np.linspace(0., tmax-tmin, pprecision)
         
@@ -68,7 +69,7 @@ def allhits(NS: object, trajs: np.ndarray, pprecision: int = 500) -> np.ndarray:
 def plot_hits(ahits: np.ndarray, eventname: str, nmax: int = 100_000) -> None:
     X, Y, Z = np.array(ahits)[:nmax].T[2:5]
     ax = plt.axes(projection='3d')
-    ax.scatter3D(X, Y, Z, c='b', s=1e-2)
+    ax.scatter3D(X, Y, Z, s=0.1, c='purple', linewidths=0)
     ax.set_xlabel('$x$ (km)')
     ax.set_ylabel('$y$ (km)')
     ax.set_zlabel('$z$ (km)')

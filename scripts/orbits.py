@@ -121,32 +121,44 @@ def singletrajs(trajs: np.ndarray) -> np.ndarray:
 
 # Time order trajectories
 @njit
-def torder(traj: np.ndarray) -> None:
+def torder(traj: np.ndarray, tfix: float = None) -> None:
+    if tfix is not None:
+        tmin, tmax = min(traj.T[0]), max(traj.T[0])
+        
+        if tmax-tmin > 0.9*tfix:
+            for ii in range(len(traj.T[0])):
+                if traj.T[0][ii] > tfix/2:
+                    traj.T[0][ii] -= tfix
+
     return traj[traj[:, 0].argsort()]
 
 # Interpolate trajectories
-def smoothtraj(traj: np.ndarray):
+def smoothtraj(traj: np.ndarray, tfix: float = None):
     try:
-        traj = torder(traj)
+        traj = torder(traj, tfix)
         return interp1d(traj.T[0], traj.T[1:4], kind=11), interp1d(traj.T[0], traj.T[4:7], kind=11)
-    except ValueError:
+    except TypeError:
         return None
 
 # Plot trajectories
-def plot_traj(traj: np.ndarray, show: bool = False) -> None:
+def plot_traj(traj: np.ndarray, show: bool = False, tfix: float = None) -> None:
     ax = plt.axes()
-    ax.scatter(traj.T[3], traj.T[1], s=1)
+    ax.scatter(traj.T[3], traj.T[1], s=1, linewidths=0)
     
-    tmin, tmax = min(traj.T[0]), max(traj.T[0])
-    ts = np.linspace(tmin, tmax, 1000)
-    smtraj = smoothtraj(traj)[0](ts)
-    ax.plot(smtraj[2], smtraj[0], lw=1.)
+    try:
+        tmin, tmax = min(traj.T[0]), max(traj.T[0])
+        ts = np.linspace(tmin, tmax, 1000)
+        smtraj = smoothtraj(traj, tfix)[0](ts)
+        ax.plot(smtraj[2], smtraj[0], lw=.1)
+        
+    except TypeError:
+        pass
 
     plt.xlabel('$z$ (km)', fontsize=16)
     plt.ylabel('$x$ (km)', fontsize=16)
-
+    
     if show:
-        plt.show()
+            plt.show()
     
 # Plot trajectories
 def plot_trajs(trajs: np.ndarray, NS: object, fname: str = None, nmax: int = 1_000, show: bool = False) -> None:
@@ -154,9 +166,18 @@ def plot_trajs(trajs: np.ndarray, NS: object, fname: str = None, nmax: int = 1_0
     ax.set_aspect('equal')
 
     for traj in trajs[:nmax]:
-        ax.scatter(traj.T[3], traj.T[1], s=1e-2)
+        ax.scatter(traj.T[3], traj.T[1], s=0.1, linewidths=0)
         
-    circle = plt.Circle((0, 0), NS.radius, facecolor='purple', alpha = 0.5)
+        try:
+            tmin, tmax = min(traj.T[0]), max(traj.T[0])
+            ts = np.linspace(tmin, tmax, 1000)
+            smtraj = smoothtraj(traj, NS.T)[0](ts)
+            ax.plot(smtraj[2], smtraj[0], lw=.1)
+            
+        except ValueError:
+            pass
+        
+    circle = plt.Circle((0, 0), NS.radius, facecolor='purple', alpha = 0.75)
     ax.add_patch(circle)
 
     plt.xlabel('$z$ (km)', fontsize=16)

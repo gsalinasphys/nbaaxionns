@@ -5,7 +5,7 @@ import time
 import matplotlib as mpl
 
 mpl.rcParams['text.usetex'] = True
-mpl.rcParams['figure.dpi']= 300
+mpl.rcParams['figure.dpi']= 600
 import warnings
 
 import numpy as np
@@ -53,7 +53,7 @@ Impact parameter:           {O[2]:.2e} km
 Roche radius:               {O[3]:.2e} km
 Position at Roche radius:   [{O[4][0]:.2e}, {O[4][1]:.2e}, {O[4][2]:.2e}] km
 Velocity at Roche radius:   [{O[5][0]:.2e}, {O[5][1]:.2e}, {O[5][2]:.2e}] km/s
-Sampling cylinder:          R = {O[6]:.2e} km,
+Sampling cylinder:          R = {O[6]:.2e} km
                             z = {O[7]:.2e} + [{O[8][0]:.2e}, {O[8][1]:.2e}] km
 Axions per trajectory:      {O[9]:.2e}
 """
@@ -150,12 +150,13 @@ Axion-photon coupling:      {gag} x 10^-14 GeV-1
     
     # Run function 'run' in parallel
     ncores = mp.cpu_count() - 1
+    nbatches = 400*ncores
     with mp.Pool(processes=ncores) as pool:
         result = pool.starmap(run, [(nps, ACparams, lbounds,
                                      NSparams, rprecision, padding,
                                      eventname+'/'+eventname+f'_{ii}'+'trajs' if savetrajs else None, 
                                      eventname+'/'+eventname+f'_{ii}'+'conversion' if savehits is not None else None)
-                                    for ii in range(ncores)])
+                                    for ii in range(nbatches)])
     
     # Join all the generated files
     joinnpys(eventname)
