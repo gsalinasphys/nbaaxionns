@@ -150,7 +150,7 @@ Axion-photon coupling:      {gag} x 10^-14 GeV-1
     
     # Run function 'run' in parallel
     ncores = mp.cpu_count() - 1
-    nbatches = 400*ncores
+    nbatches = ncores
     with mp.Pool(processes=ncores) as pool:
         result = pool.starmap(run, [(nps, ACparams, lbounds,
                                      NSparams, rprecision, padding,

@@ -18,7 +18,9 @@ def repeat(v: np.ndarray, n: int) -> np.ndarray:
 # Magnitude of vectors
 @njit
 def mag(vs: np.ndarray) -> np.ndarray:
-    if vs.ndim == 1:
+    if isinstance(vs, float):
+        return abs(vs)
+    elif vs.ndim == 1:
         return sqrt(np.sum(vs**2))
     
     return np.sqrt(np.sum(vs**2, axis = 1))

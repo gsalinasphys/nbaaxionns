@@ -1,7 +1,7 @@
 from math import atan, pi, sqrt
 
 import numpy as np
-from numba import float64, int8  # import the types
+from numba import float64, int8
 from numba.experimental import jitclass
 from scripts.basic import cases, heav, mag, randdir2d, randdir3d, step
 from scripts.globals import G, rho_eq
@@ -39,9 +39,6 @@ class AxionMiniclusterNFW:
         if isinstance(positions, float):
             d = positions   # Assumes the clump is at the origin
             return self.rho_s() / (d/self.rs()*(1 + d/self.rs())**2) * step(d/self.rtrunc(), rbounds)
-        elif positions.ndim == 1:
-            d = mag(positions - self.rCM)
-            return self.rho_s() / (d/self.rs()*(1 + d/self.rs())**2) * step(d/self.rtrunc(), rbounds)
         
         ds = mag(positions - self.rCM)  
         return self.rho_s() / (ds/self.rs()*(1 + ds/self.rs())**2) * step(ds/self.rtrunc(), rbounds)
@@ -49,9 +46,6 @@ class AxionMiniclusterNFW:
     def grav_pot(self, positions: np.ndarray) -> np.ndarray:   # In units of (km/s)^2
         if isinstance(positions, float):
             d = positions   # Assumes the clump is at the origin
-            return -4e-10*pi*G*self.rho_s()*self.rs()**3/d*np.log((d + self.rs())/self.rs())
-        elif positions.ndim == 1:
-            d = mag(positions - self.rCM)
             return -4e-10*pi*G*self.rho_s()*self.rs()**3/d*np.log((d + self.rs())/self.rs())
         
         ds = mag(positions - self.rCM)
@@ -61,11 +55,6 @@ class AxionMiniclusterNFW:
     def encl_mass(self, positions: np.ndarray) -> np.ndarray:
         if isinstance(positions, float):
             d = positions   # Assumes the clump is at the origin
-            return cases(d-self.rtrunc(),
-                        4*pi*self.rho_s()*self.rs()**3*(np.log((d + self.rs())/self.rs())-d/(d + self.rs())),
-                        self.mass)
-        elif positions.ndim == 1:
-            d = mag(positions - self.rCM)
             return cases(d-self.rtrunc(),
                         4*pi*self.rho_s()*self.rs()**3*(np.log((d + self.rs())/self.rs())-d/(d + self.rs())),
                         self.mass)
