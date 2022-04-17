@@ -1,10 +1,10 @@
 from math import pi
 
 import numpy as np
-from numba import float64, int8
+from numba import float64, int8, int64
 from numba.experimental import jitclass
 from scipy.interpolate import interp1d
-from scripts.basic import mag
+from scripts.basic import heav, mag, nearest
 from scripts.globals import ma
 
 spec = [
@@ -30,14 +30,18 @@ class AxionStar:
     def rtrunc(self):
         return 2*self.R99()
     
-    def rho_prf(self, positions: np.ndarray, precision: int = 1_000) -> np.ndarray:
-        pdistrib = np.load("input/AS_profile_2R99.npy")
-        rs = np.linspace(0., self.rtrunc()/len(pdistrib), precision)
-        pdistrib = interp1d(rs, pdistrib)
-        norm = self.mass/np.trapz(4*pi*rs**2*pdistrib, rs)
+    def rho_prf(self, positions: np.ndarray, prf: np.ndarray) -> np.ndarray:
+        # toret = np.empty(len(positions))
+        inds = mag(positions)/self.rtrunc()*len(prf)
+        print(inds)
+        inds = inds*heav(len(prf)-inds, 1.) - heav(inds-len(prf), 0.)
+        print(inds)
+        prf = np.append(prf, 0.)
         
-        if isinstance(positions, float):    # Assumes the axion star is at the origin
-            return pdistrib(positions)/norm
+        return prf[inds.astype(int64)]
+        # for ii in range(len(positions)):
+        #     if inds[ii] < len(prf):
+        #         return prf[inds.astype(int64)]
+        #     else:
+        #         return 0.
         
-        ds = mag(positions - self.rCM)
-        return pdistrib(ds)/norm

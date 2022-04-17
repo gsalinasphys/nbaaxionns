@@ -38,7 +38,17 @@ def mydot(v1: np.ndarray, v2: np.ndarray) -> float:
 @njit
 def nums_vs(nums: np.ndarray, vs: np.ndarray) -> np.ndarray:
     return np.multiply(vs.T, nums).T 
-    
+
+# Find index of element in array closest to a value 
+@njit
+def nearest(arr: np.ndarray, val: float) -> int:
+    return (np.abs(arr - val)).argmin()
+
+@njit
+def nearests(arr: np.ndarray, vals: np.ndarray) -> int:
+    for ii in range(len(vals)):
+        yield nearest(arr, vals[ii])
+
 # Heaviside function
 @njit
 def heav(v: np.ndarray, x0: float) -> np.ndarray:
