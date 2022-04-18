@@ -5,9 +5,10 @@ import numpy as np
 from classes.particles import Particles
 from numba import njit
 
-from scripts.basic import mag, randdir2d, repeat
+from scripts.basic import (mag, nums_vs, randdir2d, randdir3d, randdirs3d,
+                           repeat)
 from scripts.globals import G
-from scripts.metropolis import metropolis, rincyl
+from scripts.metropolis import metropolis, rdistr, rincyl
 from scripts.orbits import add_ps, min_approach, rm_far, trajs, update_ps
 
 
@@ -28,6 +29,27 @@ def trajAC(pAC: object, NS: object, rmin: float, rprecision: float = 5e-2) -> No
             finished = True
         
         update_ps(pAC, NS, rprecision=rprecision)
+
+# Select initial conditions that will hit close to the neutron star
+def drawrvs(AC: object, NS: object, nps: int, nsamples: int = 640) -> np.ndarray:    
+    ps = Particles(np.empty((0,1)), np.empty((0,1)))
+    ndrawn = 0
+    while len(ps.positions) < nps:
+        ndrawn += nsamples
+            
+        rs = metropolis(rdistr, nsamples, x0=0.2, sigma=0.05, xbounds=1., O=AC)
+        rsdrawn = repeat(AC.rCM, nsamples) + AC.rtrunc()*nums_vs(np.abs(list(rs)), np.array(list(randdirs3d(nsamples))))
+        
+        vsdrawn = repeat(AC.vCM, len(rsdrawn))
+        if AC.vdisptype:
+            vsdrawn += np.array(list(AC.vsdisp(rsdrawn)))
+        accelerations, times, nperiods = repeat(np.zeros(3), len(rsdrawn)), np.repeat(0., len(rsdrawn)), np.repeat(0, len(rsdrawn))
+        
+        add_ps(ps, rsdrawn, vsdrawn, accelerations, times, nperiods)
+        rm_far(ps, NS)
+        
+    return (ps.positions, ps.velocities), ndrawn
+
 
 # Maximum impact parameter to reach neutron star without velocity dispersion
 @njit

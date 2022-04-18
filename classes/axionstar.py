@@ -4,86 +4,73 @@ import numpy as np
 from numba import float64, int8, int64
 from numba.experimental import jitclass
 from scipy.interpolate import interp1d
-from scripts.basic import heav, mag, myint
+from scripts.basic import cases, heav, mag, myint, myintfrom, myintupto, repeat
 from scripts.globals import G, ma
 
 spec = [
     ('rCM', float64[:]),
     ('vCM', float64[:]),
     ('mass', float64),
-    ('vdisptype', int8)
+    ('vdisptype', int8),
+    ('prf', float64[:])
 ]
 
 @jitclass(spec)
 class AxionStar:
-    def __init__(self, rCM=np.zeros(3), vCM=np.zeros(3), mass=.01, vdisptype=0):
+    def __init__(self, rCM=np.zeros(3), vCM=np.zeros(3), mass=.01, vdisptype=0, prf=np.empty(0)):
         self.rCM = rCM                      # Position (km) of center of mass
         self.vCM = vCM                      # Velocity (km/s) of center of mass
         self.mass = mass                    # Axion star mass (10^{-10} M_Sun)
         self.vdisptype = vdisptype          # Type of velocity dispersion curve: 0 is no dispersion
+        self.prf = prf                      # Not-to-scale density profile as input to be rescaled
         
     # Radius (km) that contains 99% of the axion star's mass
     def R99(self):
-        return 2.64e3/(ma**2*self.mass)
+        return 26.4/(ma**2*self.mass)
     
     # Truncation radius is chosen at 2R99
     def rtrunc(self):
         return 2*self.R99()
     
     # Density profile in units of 10^{-10}*M_Sun/km^3
-    def rho_prf(self, positions: np.ndarray, prf: np.ndarray) -> np.ndarray:
-        rs = np.linspace(0, self.rtrunc(), len(prf))
-        norm = self.mass/myint(4*pi*rs**2*prf, rs)
-        if isinstance(positions, float):
-            return norm*prf[int64(mag(positions)/self.rtrunc()*len(prf))]
-            
-        inds = mag(positions-self.rCM)/self.rtrunc()*len(prf)
-        inds = inds*heav(len(prf)-inds, 1.) - heav(inds-len(prf), 0.)
-        prf = np.append(prf, 0.)
-        
-        return norm*prf[inds.astype(int64)]
+    def rho_prf(self, positions: np.ndarray, rbound: float = 1.) -> np.ndarray:
+        rs = np.linspace(0, self.rtrunc(), len(self.prf))
+        norm = self.mass/myint(4*pi*rs**2*self.prf, rs)
+        if isinstance(positions, float):    # Assumes axion star is at the origin
+            ind = int64(mag(positions)/self.rtrunc()*len(self.prf))
+            return norm*self.prf[ind] if ind<len(self.prf) else 0.
     
-    # Enclosed mass given position
-    def encl_mass(self, positions: np.ndarray, prf: np.ndarray) -> np.ndarray:
-        rs = np.linspace(0, self.rtrunc(), len(prf))
-        norm = self.mass/myint(4*pi*rs**2*prf, rs)
-        if isinstance(positions, float):
-            ind = int64(mag(positions)/self.rtrunc()*len(prf))
-            return norm*myint(4*pi*rs[:ind]**2*prf[:ind], rs[:ind])
-        inds = mag(positions-self.rCM)/self.rtrunc()*len(prf)
-        inds = inds*heav(len(prf)-inds, 1.) - heav(inds-len(prf), 0.)
-
-        toret = np.empty(len(positions))
-        for ii in range(len(positions)):
-            ind = int64(inds[ii])
-            if ind != -1:
-                toret[ii] = norm*myint(4*pi*rs[:ind]**2*prf[:ind], rs[:ind])
-            else:
-                toret[ii] = self.mass
-        
-        return toret
+        return cases(mag(positions-self.rCM)-rbound*self.rtrunc(),
+              norm*self.prf[(mag(positions-self.rCM)/self.rtrunc()*len(self.prf)).astype(int64)],
+              np.zeros(len(positions)))
     
-    def grav_pot(self, positions: np.ndarray, prf: np.ndarray) -> np.ndarray:   # In units of (km/s)^2
-        rs = np.linspace(0, self.rtrunc(), len(prf))
-        norm = self.mass/myint(4*pi*rs**2*prf, rs)
-        if isinstance(positions, float):
-            ind = int64(mag(positions)/self.rtrunc()*len(prf))
-            return -G*self.encl_mass(positions, prf)/positions - G*norm*myint(4*pi*rs[ind:]*prf[ind:], rs[ind:])
+        # Enclosed mass given position
+    def encl_mass(self, positions: np.ndarray) -> np.ndarray:
+        rs = np.linspace(0, self.rtrunc(), len(self.prf))
+        norm = self.mass/myint(4*pi*rs**2*self.prf, rs)
+        if isinstance(positions, float):    # Assumes axion star is at the origin
+            ind = int64(mag(positions)/self.rtrunc()*len(self.prf))
+            return norm*myint(4*pi*rs[:ind]**2*self.prf[:ind], rs[:ind])
+      
+        inds = (mag(positions-self.rCM)/self.rtrunc()*len(self.prf)).astype(int64)
+        return cases(mag(positions-self.rCM)-self.rtrunc(),
+                     norm*np.array(list(myintupto(4*pi*rs**2*self.prf, rs, inds))),
+                     np.repeat(self.mass, len(positions)))
+    
+    def grav_pot(self, positions: np.ndarray) -> np.ndarray:   # In units of (km/s)^2
+        rs = np.linspace(0, self.rtrunc(), len(self.prf))
+        norm = self.mass/myint(4*pi*rs**2*self.prf, rs)
+        if isinstance(positions, float):    # Assumes axion star is at the origin
+            ind = int64(mag(positions)/self.rtrunc()*len(self.prf))
+            return -G*self.encl_mass(positions)/positions - G*norm*myint(4*pi*rs[ind:]*self.prf[ind:], rs[ind:])
+        
         ds = mag(positions-self.rCM)
-        inds = ds/self.rtrunc()*len(prf)
-        inds = inds*heav(len(prf)-inds, 1.) - heav(inds-len(prf), 0.)
-    
-        encl_ms = self.encl_mass(positions, prf)
-        toret = np.empty(len(positions))
-        for ii in range(len(positions)):
-            ind = int64(inds[ii])
-            if ind != -1:
-                toret[ii] = -G*encl_ms[ii]/ds[ii] - G*norm*myint(4*pi*rs[ind:]*prf[ind:], rs[ind:])
-            else:
-                toret[ii] = -G*encl_ms[ii]/ds[ii]
+        inds = (ds/self.rtrunc()*len(self.prf)).astype(int64)
+        encl_ms = self.encl_mass(positions)
+        return cases(mag(positions-self.rCM)-self.rtrunc(),
+                    -G*encl_ms/ds - G*norm*np.array(list(myintfrom(4*pi*rs*self.prf, rs, inds))),
+                    -G*self.mass/ds)
         
-        return toret
-
     # Escape velocity in km/s
     def vesc(self, position: np.ndarray) -> float:
         return sqrt(abs(2*self.grav_pot(position)))

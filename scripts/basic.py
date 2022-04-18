@@ -67,7 +67,7 @@ def heav(v: np.ndarray, x0: float) -> np.ndarray:
 def step(v: np.ndarray, xbounds: tuple = (0., 1.)):
     return heav(xbounds[1] - v, 1.) - heav(xbounds[0] - v, 0.)
 
-# Given cond>0 return outide else inside componentwise
+# Given cond>0 return outside else inside componentwise
 @njit
 def cases(cond: np.ndarray, inside: np.ndarray, outside: np.ndarray):
     return inside*heav(-cond, 0.) + outside*heav(cond, 1.)
@@ -112,11 +112,21 @@ def zeroat(v: np.ndarray) -> np.ndarray:
     prods = v[1:]*v[:-1]
     return np.where(prods < 0)[0]
 
-# Numba version of myint (equal time steps for x)
+# Numba version of np.trapz (equal time steps for x)
 @njit(fastmath=True, cache=True)
-def myint(y, x):
+def myint(ys: np.ndarray, xs: np.ndarray, xbounds: tuple = (0., -1)) -> float:
     toret = 0.
-    for ii in range(len(x)):
-        toret += y[ii]
+    for ii in range(xbounds[0], xbounds[1] if xbounds[1] != -1 else len(xs)):
+        toret += ys[ii]
         
-    return toret*(x[1]-x[0]) 
+    return toret*(xs[1]-xs[0]) 
+
+@njit
+def myintupto(ys: np.ndarray, xs: np.ndarray, inds: np.ndarray) -> float:
+    for ii in range(len(inds)):
+        yield myint(ys, xs, (0, inds[ii] if inds[ii] <= len(xs) else -1))
+        
+@njit
+def myintfrom(ys: np.ndarray, xs: np.ndarray, inds: np.ndarray) -> float:
+    for ii in range(len(inds)):
+        yield myint(ys, xs, (inds[ii], -1))
