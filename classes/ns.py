@@ -32,7 +32,7 @@ class NeutronStar:
     # Neutron star's gravitational field (km/s^2) at given positions
     def grav_field(self, positions: np.ndarray) -> np.ndarray: 
         if isinstance(positions, float):
-            d = positions   # Assumes the neutron star is at the origin
+            d = mag(positions)
             return cases(d-self.radius,
                         -G*self.mass*d/self.radius**3,
                         -G*self.mass/d**2)

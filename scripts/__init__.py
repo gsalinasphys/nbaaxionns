@@ -1,6 +1,6 @@
-from scripts.basic import (cases, heav, mag, mydot, nearest, nearests, nums_vs,
-                           randdir2d, randdir3d, randdirs2d, randdirs3d,
-                           repeat, step, zeroat)
+from scripts.basic import (cases, heav, mag, mydot, myint, nums_vs, randdir2d,
+                           randdir3d, randdirs2d, randdirs3d, repeat, step,
+                           zeroat)
 from scripts.conversion import allhits, conv_surf, hits, plot_hits, rc
 from scripts.encounter import cylmax, massincyl, roche, selectrvs, trajAC
 from scripts.filehandl import id_gen, joinnpys, readme

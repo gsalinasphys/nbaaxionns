@@ -35,9 +35,10 @@ class AxionMiniclusterNFW:
     def rtrunc(self) -> float:  # In km
         return self.c*self.rs()
 
-    def rho_prf(self, positions: np.ndarray, rbounds: tuple = (0., 1.)) -> np.ndarray:   # In units of 10^{-10}*M_Sun/km^3
+    # Density profile in units of 10^{-10}*M_Sun/km^3
+    def rho_prf(self, positions: np.ndarray, rbounds: tuple = (0., 1.)) -> np.ndarray:
         if isinstance(positions, float):
-            d = positions   # Assumes the clump is at the origin
+            d = mag(positions)   # Assumes the clump is at the origin
             return self.rho_s() / (d/self.rs()*(1 + d/self.rs())**2) * step(d/self.rtrunc(), rbounds)
         
         ds = mag(positions - self.rCM)  
@@ -45,7 +46,7 @@ class AxionMiniclusterNFW:
 
     def grav_pot(self, positions: np.ndarray) -> np.ndarray:   # In units of (km/s)^2
         if isinstance(positions, float):
-            d = positions   # Assumes the clump is at the origin
+            d = mag(positions)   # Assumes the clump is at the origin
             return -4e-10*pi*G*self.rho_s()*self.rs()**3/d*np.log((d + self.rs())/self.rs())
         
         ds = mag(positions - self.rCM)
@@ -54,7 +55,7 @@ class AxionMiniclusterNFW:
     # Enclosed mass from a given position, in units of 10^{-10} M_Sun
     def encl_mass(self, positions: np.ndarray) -> np.ndarray:
         if isinstance(positions, float):
-            d = positions   # Assumes the clump is at the origin
+            d = mag(positions)   # Assumes the clump is at the origin
             return cases(d-self.rtrunc(),
                         4*pi*self.rho_s()*self.rs()**3*(np.log((d + self.rs())/self.rs())-d/(d + self.rs())),
                         self.mass)

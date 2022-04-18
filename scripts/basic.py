@@ -1,5 +1,6 @@
 import random
 import string
+from functools import cache
 from math import cos, pi, sin, sqrt
 from typing import Generator
 
@@ -38,16 +39,6 @@ def mydot(v1: np.ndarray, v2: np.ndarray) -> float:
 @njit
 def nums_vs(nums: np.ndarray, vs: np.ndarray) -> np.ndarray:
     return np.multiply(vs.T, nums).T 
-
-# Find index of element in array closest to a value 
-@njit
-def nearest(arr: np.ndarray, val: float) -> int:
-    return (np.abs(arr - val)).argmin()
-
-@njit
-def nearests(arr: np.ndarray, vals: np.ndarray) -> int:
-    for ii in range(len(vals)):
-        yield nearest(arr, vals[ii])
 
 # Heaviside function
 @njit
@@ -120,3 +111,12 @@ def randdirs3d(n: int) -> Generator:
 def zeroat(v: np.ndarray) -> np.ndarray:
     prods = v[1:]*v[:-1]
     return np.where(prods < 0)[0]
+
+# Numba version of myint (equal time steps for x)
+@njit(fastmath=True, cache=True)
+def myint(y, x):
+    toret = 0.
+    for ii in range(len(x)):
+        toret += y[ii]
+        
+    return toret*(x[1]-x[0]) 
