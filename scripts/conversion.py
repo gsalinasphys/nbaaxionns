@@ -1,4 +1,4 @@
-from itertools import chain
+from math import cos, pi, sin
 from typing import Generator
 
 import matplotlib.pyplot as plt
@@ -7,8 +7,8 @@ from matplotlib import markers
 from mpl_toolkits.mplot3d import Axes3D
 from scipy.optimize import brentq, root_scalar
 
-from scripts.basic import mag, nums_vs, randdirs3d, repeat, zeroat
-from scripts.globals import maGHz, outdir
+from scripts.basic import mag, mydot, nums_vs, randdirs3d, repeat, zeroat
+from scripts.globals import G_eV2, c, eV_GHz, gag, km_eVinv, maGHz, outdir
 from scripts.orbits import smoothtraj
 
 
@@ -31,7 +31,7 @@ def rc(NS: object, position: np.ndarray, time: float, exact: bool = False) -> fl
 def conv_surf(NS: object, time: float, nsamples: int = 100_000, exact: bool = False) -> Generator:    
     for dir in randdirs3d(nsamples):
         rcii = rc(NS, dir, time, exact=exact)
-        if rcii is not None:
+        if rcii:
             yield rcii*dir
 
 # Find positions at which trajectory crosses neutron star conversion surface
@@ -47,7 +47,7 @@ def hits(NS: object, traj: np.ndarray, pprecision: int = 100) -> np.ndarray:
             # print("Error in finding hits (function call): ", e)
             return None
     
-    zeros = zeroat(np.array([toroot(t) for t in ts if toroot(t) is not None]))
+    zeros = zeroat(np.array([toroot(t) for t in ts if toroot(t)]))
     
     sols = []
     for zero in zeros:
@@ -76,3 +76,22 @@ def plot_hits(ahits: np.ndarray, eventname: str, nmax: int = 100_000) -> None:
 
     plt.savefig(outdir + eventname + '/' + eventname + 'conversion.png')
     plt.close()
+
+def prob(hit: np.ndarray, NS: object) -> float:
+    time, position, velocity = hit[1], hit[2:5], hit[5:8]
+
+    k = maGHz*mag(velocity)/c    # in GHz
+    theta = mydot(NS.B(position, time), velocity)/(mag(NS.B(position, time))*mag(velocity))
+    
+    ydir = np.cross(velocity, np.cross(velocity, NS.B(position, time)))
+    ydir /= mag(ydir)
+    sdir = cos(theta)*ydir + sin(theta)*velocity/mag(velocity)
+    sdir /= mag(sdir)
+
+    eps = 1e-8
+    dr = sdir*eps
+    dwp = NS.wp(position+dr, time) - NS.wp(position, time)
+    
+    wpp = dwp/eps
+    
+    return eV_GHz * G_eV2**2 * km_eVinv * 1.e-18/2. * (gag*mag(NS.B(position, time))*sin(theta))**2 * pi * maGHz**5 / (2*k*abs(wpp)) / (k**2+(maGHz*sin(theta))**2)**2

@@ -5,7 +5,8 @@ from scripts.conversion import allhits, conv_surf, hits, plot_hits, rc
 from scripts.encounter import (cylmax, drawrvs, massincyl, roche, selectrvs,
                                trajAC)
 from scripts.filehandl import id_gen, joinnpys, readme
-from scripts.globals import (EmptyClass, G, Msun, gag, ma, maGHz, outdir,
+from scripts.globals import (EmptyClass, G, G_eV2, Msun, MSun_eV, c, eV_GHz,
+                             gag, km_eVinv, local_run, ma, maGHz, outdir,
                              rho_eq, yr)
 from scripts.metropolis import (cyldistr, metropolis, proposal, rdistr, rincyl,
                                 stepdistr)

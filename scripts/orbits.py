@@ -108,7 +108,7 @@ def trajs(p: object, NS: object, rlimits: Tuple = None, rprecision: float = 5e-2
     data = np.array(data).T
     data = data[data[:, 0].argsort()]
     
-    if fname is not None:
+    if fname:
         np.save(outdir + fname, data)
     
     return data
@@ -122,7 +122,7 @@ def singletrajs(trajs: np.ndarray) -> np.ndarray:
 # Time order trajectories
 @njit
 def torder(traj: np.ndarray, tfix: float = None) -> None:
-    if tfix is not None:
+    if tfix:
         tmin, tmax = min(traj.T[0]), max(traj.T[0])
         
         if tmax-tmin > 0.9*tfix:
@@ -183,7 +183,7 @@ def plot_trajs(trajs: np.ndarray, NS: object, fname: str = None, nmax: int = 1_0
     plt.xlabel('$z$ (km)', fontsize=16)
     plt.ylabel('$x$ (km)', fontsize=16)
     
-    if fname is not None:
+    if fname:
         plt.savefig(fname, bbox_inches='tight', dpi=300)
     
     if show:

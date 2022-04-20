@@ -15,9 +15,9 @@ import numpy as np
 warnings.filterwarnings("ignore")
 
 from classes import AxionMiniclusterNFW, AxionStar, NeutronStar, Particles
-from scripts import (Msun, allhits, cylmax, gag, id_gen, joinnpys, ma,
-                     massincyl, outdir, plot_hits, plot_trajs, readme, roche,
-                     selectrvs, singletrajs, trajAC, trajs)
+from scripts import (Msun, allhits, cylmax, gag, id_gen, joinnpys, local_run,
+                     ma, massincyl, outdir, plot_hits, plot_trajs, readme,
+                     roche, selectrvs, singletrajs, trajAC, trajs)
 
 
 # Separate __repr__ functions, as Numba classes do not allow for them
@@ -68,7 +68,7 @@ Roche radius:               {params[4]:.2e} km
 Position at Roche radius:   [{params[5][0]:.2e}, {params[5][1]:.2e}, {params[5][2]:.2e}] km
 Velocity at Roche radius:   [{params[6][0]:.2e}, {params[6][1]:.2e}, {params[6][2]:.2e}] km/s
 Sampling cylinder:          R = {params[7]:.2e} km
-                            z = {params[8]:.2e} + [{params[9][0]:.2e}, {params[8][1]:.2e}] km
+                            z = {params[8]:.2e} + [{params[9][0]:.2e}, {params[9][1]:.2e}] km
 Axions per trajectory:      {params[10]:.2e}
 """
         )
@@ -100,8 +100,8 @@ def run(nps: int,
     Args:
         nps (int): Number of particles in each simulated batch
         ACparams (tuple, optional): Parameters of axion clump in the format (clumptype, rCM (km), vCM (km), mass (10^-10 MSun), *extraparams)
-            clumptype == 0 for a dilute axion star
-                         1 for an axion minicluster, extraparams = (delta, concentration, vdisptype = (0 for None, 1 for Maxwell-Boltzmann))
+            clumptype = 0 for a dilute axion star
+                        1 for an axion minicluster, extraparams = (delta, concentration, vdisptype = (0 for None, 1 for Maxwell-Boltzmann))
             Defaults to (1, np.empty((0,3)), np.empty((0,3)), 1., 1.55, 100., 1).
         lbounds (tuple, optional): Bounds of sampling cylinder along its axis (z-axis) in units of the axion clump truncation radius. Defaults to (-1., 1.).
         NSparams (tuple, optional): Parameters of neutron star in the format (mass (MSun), radius (km), period (s), axis, B0 (10^14 G), misalign (rad), psi0(rad))
@@ -143,23 +143,23 @@ def run(nps: int,
     ahits = list(allhits(NS, simtrajs))
     ahits = np.array([hit for subhits in ahits for hit in subhits])
     
-    if fnamehits is not None:
+    if fnamehits:
         np.save(outdir + fnamehits, ahits)
         
     return ahits, ndrawn
 
 def main() -> None:
     # Initial parameters
-    nps, b, vin, rprecision, padding = 160, 0.2, 200., 5e-2, 10.
-    savetrajs, savehits = True, True
+    nps, b, vin, rprecision, padding = 320, 0.2, 200., 5e-2, 10.
+    savetrajs, savehits, plots = True, True, False
 
     # Building axion clump and neutron star
-    # ACparams = (1, 1., 1.55, 100., 1)
-    ACparams = (0, 0.01, 0, np.load("input/AS_profile_2R99.npy")[::100])
+    ACparams = (1, 1., 1.55, 100., 1)
+    # ACparams = (0, 0.01, 0, np.load("input/AS_profile_2R99.npy")[::100])
     if ACparams[0]:
         ACmass, delta, c, vdisptype = ACparams[1:]
         AC = AxionMiniclusterNFW(mass=ACmass, delta=delta, c=c, vdisptype=vdisptype)
-        lbounds = (-1., 1.)
+        lbounds = (-1./100, 1./100)
     else:
         ACmass, vdisptype, prf = ACparams[1:]
         AC = AxionStar(mass=ACmass, vdisptype=vdisptype, prf=prf)
@@ -188,22 +188,23 @@ Axion-photon coupling:      {gag} x 10^-14 GeV-1
     ACparams = (ACparams[0],) + (AC.rCM, AC.vCM) + ACparams[1:]
     
     # Run function 'run' in parallel
-    ncores = mp.cpu_count() - 1
-    nbatches = ncores
+    ncores = mp.cpu_count() - local_run
+    nbatches = 10*ncores
     with mp.Pool(processes=ncores) as pool:
         result = pool.starmap(run, [(nps, ACparams, lbounds,
                                      NSparams, rprecision, padding,
                                      eventname+'/'+eventname+f'_{ii}'+'trajs' if savetrajs else None, 
-                                     eventname+'/'+eventname+f'_{ii}'+'conversion' if savehits is not None else None)
+                                     eventname+'/'+eventname+f'_{ii}'+'conversion' if savehits else None)
                                     for ii in range(nbatches)])
     
     # Join all the generated files
     joinnpys(eventname)
     
     # Plot trajectories
-    trajs = np.load(''.join([outdir, eventname, '/', eventname, 'trajs.npy']))
-    sgltrajs = list(singletrajs(trajs))
-    plot_trajs(sgltrajs, NS, fname=''.join([outdir, eventname, '/', eventname, 'trajs']))
+    if plots:
+        trajs = np.load(''.join([outdir, eventname, '/', eventname, 'trajs.npy']))
+        sgltrajs = list(singletrajs(trajs))
+        plot_trajs(sgltrajs, NS, fname=''.join([outdir, eventname, '/', eventname, 'trajs']))
     
     # Number of axions per trajectory
     result, ndrawn = np.concatenate([rst[0] for rst in result]), sum([rst[1] for rst in result])
@@ -218,7 +219,8 @@ Axion-photon coupling:      {gag} x 10^-14 GeV-1
         towrite = (ACparams[0], rvsin[0], rvsin[1], b*AC.rtrunc(), roche(AC, NS), AC.rCM, AC.vCM, axspertraj)
     
     # Plot conversion points
-    plot_hits(result, eventname)
+    if plots:
+        plot_hits(result, eventname)
     
     # Add more to readme
     readme(eventname, reprevent(towrite))
