@@ -18,11 +18,11 @@ def genconv(eventname):
     fnamehits = eventname + 'conversion'
     np.save(outdir + fnamehits, ahits)
 
-eventnames = ['MCCEBXMO', 'MCBIGZIQ', 'MCYQOGDS', 'MCZLAQEK', 'MCSRACFJ', 'MCGMUOSK', 'MCPCPTTV', 'MCYWLCRK', 'MCFBOPBO', 'MCAEUEWC']
+# eventnames = ['MCCEBXMO', 'MCBIGZIQ', 'MCYQOGDS', 'MCZLAQEK', 'MCSRACFJ', 'MCGMUOSK', 'MCPCPTTV', 'MCYWLCRK', 'MCFBOPBO', 'MCAEUEWC']
+eventnames = ['MCGMUOSK', 'MCPCPTTV', 'MCYWLCRK', 'MCFBOPBO', 'MCAEUEWC']
 
 NS = NeutronStar()
 
-ncores = mp.cpu_count()
-nbatches = 10*ncores
+ncores = mp.cpu_count() - 1
 with mp.Pool(processes=ncores) as pool:
-    pool.starmap(genconv, [(eventname) for eventname in eventnames])
+    pool.starmap(genconv, [(eventname,) for eventname in eventnames])

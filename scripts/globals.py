@@ -1,6 +1,6 @@
 from numba.experimental import jitclass
 
-local_run = True
+local_run = False
 
 G = 1.325e11                    # Newton's constant (km^3/(M_Sun s^2))
 c = 2.99792458*1e5              # Speed of light in km/s
