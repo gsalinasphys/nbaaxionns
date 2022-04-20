@@ -1,4 +1,4 @@
-from math import pi, sqrt, tan
+from math import sqrt
 from typing import Callable
 
 import numpy as np

@@ -3,9 +3,8 @@ from math import cos, pi, sin, sqrt
 import numpy as np
 from numba import float64  # import the types
 from numba.experimental import jitclass
-from scipy.optimize import root_scalar
-from scripts.basic import cases, heav, mag, mydot, nums_vs, repeat
-from scripts.globals import G, ma, maGHz
+from scripts.basic import cases, heav, mag, mydot, nums_vs
+from scripts.globals import G, maGHz
 
 spec = [
     ('mass', float64),

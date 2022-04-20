@@ -1,14 +1,13 @@
 import itertools
-from math import sqrt
 from typing import Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
-from numba import int64, njit
+from numba import njit
 from scipy.interpolate import interp1d
 
 from scripts.basic import mag
-from scripts.globals import G, ma, outdir, yr
+from scripts.globals import G, ma, outdir
 
 
 # Gravitational energies (10^{-5}eV*(km/s)^2)

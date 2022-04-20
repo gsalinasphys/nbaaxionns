@@ -1,5 +1,4 @@
 import random
-from math import atan, pi
 from typing import Callable, Generator
 
 import numpy as np

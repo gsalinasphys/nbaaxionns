@@ -1,9 +1,9 @@
-from math import atan, pi, sqrt
+from math import pi, sqrt
 
 import numpy as np
 from numba import float64, int8
 from numba.experimental import jitclass
-from scripts.basic import cases, heav, mag, randdir2d, randdir3d, step
+from scripts.basic import cases, heav, mag, randdir3d, step
 from scripts.globals import G, rho_eq
 
 spec = [

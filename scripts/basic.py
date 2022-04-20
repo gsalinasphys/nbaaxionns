@@ -1,6 +1,4 @@
 import random
-import string
-from functools import cache
 from math import cos, pi, sin, sqrt
 from typing import Generator
 

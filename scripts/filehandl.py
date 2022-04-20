@@ -16,11 +16,12 @@ def joinnpys(dirstr):
         filename, ext = os.path.splitext(os.fsdecode(file))
         if ext == ".npy":
             if filename.endswith('trajs'):
-                databt = np.load(''.join([outdir, dirstr, '/', filename, ext]))
-                databt += np.array([tagtrajs] + [0]*8)
-                tagtrajs = databt[-1][0] + 1
-                datatrajs.append(databt)
-                os.remove(''.join([outdir, dirstr, '/', filename, ext]))
+                continue
+                # databt = np.load(''.join([outdir, dirstr, '/', filename, ext]))
+                # databt += np.array([tagtrajs] + [0]*8)
+                # tagtrajs = databt[-1][0] + 1
+                # datatrajs.append(databt)
+                # os.remove(''.join([outdir, dirstr, '/', filename, ext]))
             elif filename.endswith('conversion'):
                 databt = np.load(''.join([outdir, dirstr, '/', filename, ext]))
                 databt += np.array([tagconv] + [0]*8)
@@ -28,7 +29,7 @@ def joinnpys(dirstr):
                 dataconv.append(databt)
                 os.remove(''.join([outdir, dirstr, '/', filename, ext]))
     
-    np.save(''.join([outdir, dirstr, '/', dirstr, 'trajs']), np.concatenate(datatrajs))
+    # np.save(''.join([outdir, dirstr, '/', dirstr, 'trajs']), np.concatenate(datatrajs))
     np.save(''.join([outdir, dirstr, '/', dirstr, 'conversion']), np.concatenate(dataconv))
     
 def readme(eventname: str, text: str) -> None:

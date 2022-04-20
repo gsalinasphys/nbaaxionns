@@ -3,8 +3,7 @@ from math import pi, sqrt
 import numpy as np
 from numba import float64, int8, int64
 from numba.experimental import jitclass
-from scipy.interpolate import interp1d
-from scripts.basic import cases, heav, mag, myint, myintfrom, myintupto, repeat
+from scripts.basic import cases, mag, myint, myintfrom, myintupto
 from scripts.globals import G, ma
 
 spec = [
