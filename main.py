@@ -94,7 +94,8 @@ def run(nps: int,
         rprecision: float = 5e-2,
         padding: float = 10.,
         fnametrajs: str = None,
-        fnamehits: str = None) -> tuple:
+        fnamehits: str = None,
+        loadedtrajs: str = None) -> tuple:
     """Draw particles from axion clump and evolve them until they hit the neutron star conversion surface.
 
     Args:
@@ -128,15 +129,19 @@ def run(nps: int,
     NS = NeutronStar(mass=NSmass, radius=radius, T=T, axis=axis, B0=B0, misalign=misalign, psi0=psi0)
     
     # Drawing initial positions and velocities of particles that will hit the neutron star conversion surface
-    if ACparams[0]:
-        rvsinps, ndrawn = selectrvs(AC, NS, nps, lbounds)
-        ps = Particles(rvsinps[0], rvsinps[1])
-    else:
-        rvsinps, ndrawn = drawrvs(AC, NS, nps)
-        ps = Particles(rvsinps[0], rvsinps[1])
+    if not loadedtrajs:
+        if ACparams[0]:
+            rvsinps, ndrawn = selectrvs(AC, NS, nps, lbounds)
+            ps = Particles(rvsinps[0], rvsinps[1])
+        else:
+            rvsinps, ndrawn = drawrvs(AC, NS, nps)
+            ps = Particles(rvsinps[0], rvsinps[1])
     
     # Evolving trajectories
-    simtrajs = trajs(ps, NS, (NS.radius, NS.rcmax(padding)), rprecision, fnametrajs)
+    if loadedtrajs:
+        simtrajs = np.load(outdir + loadedtrajs + '.npy')
+    else:
+        simtrajs = trajs(ps, NS, (NS.radius, NS.rcmax(padding)), rprecision, fnametrajs)
     simtrajs = [np.array(simtraj) for simtraj in list(singletrajs(simtrajs))]
     
     # Finding the points where trajectories hit the conversion surface
@@ -146,12 +151,12 @@ def run(nps: int,
     if fnamehits:
         np.save(outdir + fnamehits, ahits)
         
-    return ahits, ndrawn
+    return ahits, ndrawn if not loadedtrajs else None
 
 def main() -> None:
     # Initial parameters
-    nps, b, vin, rprecision, padding = 320, 0.2, 200., 5e-2, 10.
-    savetrajs, savehits, plots = True, True, False
+    nps, b, vin, rprecision, padding = 2560, 0.2, 200., 5e-2, 10.
+    savetrajs, savehits, plots, loadedtrajs = True, True, False, None
 
     # Building axion clump and neutron star
     ACparams = (1, 1., 1.55, 100., 1)
@@ -159,7 +164,7 @@ def main() -> None:
     if ACparams[0]:
         ACmass, delta, c, vdisptype = ACparams[1:]
         AC = AxionMiniclusterNFW(mass=ACmass, delta=delta, c=c, vdisptype=vdisptype)
-        lbounds = (-1./100, 1./100)
+        lbounds = (-1., 1.)
     else:
         ACmass, vdisptype, prf = ACparams[1:]
         AC = AxionStar(mass=ACmass, vdisptype=vdisptype, prf=prf)
@@ -170,7 +175,7 @@ def main() -> None:
     NS = NeutronStar(mass=NSmass, radius=radius, T=T, axis=axis, B0=B0, misalign=misalign, psi0=psi0)
     
     # Adding some info to README file
-    eventname = ('MC' if ACparams[0] else 'AS') + id_gen()
+    eventname = ('MC' if ACparams[0] else 'AS') + id_gen() if not loadedtrajs else loadedtrajs
     os.makedirs(outdir + eventname, exist_ok=True)
     readme(eventname,
            f"""Event name:                 {eventname}
@@ -189,42 +194,44 @@ Axion-photon coupling:      {gag} x 10^-14 GeV-1
     
     # Run function 'run' in parallel
     ncores = mp.cpu_count() - local_run
-    nbatches = 10*ncores
+    nbatches = 50*ncores
     with mp.Pool(processes=ncores) as pool:
         result = pool.starmap(run, [(nps, ACparams, lbounds,
                                      NSparams, rprecision, padding,
                                      eventname+'/'+eventname+f'_{ii}'+'trajs' if savetrajs else None, 
-                                     eventname+'/'+eventname+f'_{ii}'+'conversion' if savehits else None)
+                                     eventname+'/'+eventname+f'_{ii}'+'conversion' if savehits else None,
+                                     eventname+'/'+eventname+f'_{ii}'+'trajs' if loadedtrajs else None)
                                     for ii in range(nbatches)])
     
     # Join all the generated files
     joinnpys(eventname)
     
-    # Plot trajectories
-    if plots:
-        trajs = np.load(''.join([outdir, eventname, '/', eventname, 'trajs.npy']))
-        sgltrajs = list(singletrajs(trajs))
-        plot_trajs(sgltrajs, NS, fname=''.join([outdir, eventname, '/', eventname, 'trajs']))
-    
-    # Number of axions per trajectory
-    result, ndrawn = np.concatenate([rst[0] for rst in result]), sum([rst[1] for rst in result])
-    if ACparams[0]:
-        masscyl = massincyl(AC, ((0., cylmax(AC, NS)), lbounds))
-        axspertraj = masscyl*1e-10*Msun/(1e-5*ma*ndrawn)
-        towrite = (ACparams, rvsin[0], rvsin[1], b*AC.rtrunc(), roche(AC, NS), AC.rCM, AC.vCM,
-               cylmax(AC,NS)*AC.rtrunc(), AC.rCM[2], AC.rtrunc()*np.array(lbounds), axspertraj
-               )
-    else:
-        axspertraj = AC.mass*1e-10*Msun/(1e-5*ma*ndrawn)
-        towrite = (ACparams[0], rvsin[0], rvsin[1], b*AC.rtrunc(), roche(AC, NS), AC.rCM, AC.vCM, axspertraj)
-    
+    if not loadedtrajs:
+        # Plot trajectories
+        if plots:
+            trajs = np.load(''.join([outdir, eventname, '/', eventname, 'trajs.npy']))
+            sgltrajs = list(singletrajs(trajs))
+            plot_trajs(sgltrajs, NS, fname=''.join([outdir, eventname, '/', eventname, 'trajs']))
+        
+        # Number of axions per trajectory
+        result, ndrawn = np.concatenate([rst[0] for rst in result]), sum([rst[1] for rst in result])
+        if ACparams[0]:
+            masscyl = massincyl(AC, ((0., cylmax(AC, NS)), lbounds))
+            axspertraj = masscyl*1e-10*Msun/(1e-5*ma*ndrawn)
+            towrite = (ACparams, rvsin[0], rvsin[1], b*AC.rtrunc(), roche(AC, NS), AC.rCM, AC.vCM,
+                cylmax(AC,NS)*AC.rtrunc(), AC.rCM[2], AC.rtrunc()*np.array(lbounds), axspertraj
+                )
+        else:
+            axspertraj = AC.mass*1e-10*Msun/(1e-5*ma*ndrawn)
+            towrite = (ACparams[0], rvsin[0], rvsin[1], b*AC.rtrunc(), roche(AC, NS), AC.rCM, AC.vCM, axspertraj)
+            
+        # Add more to readme
+        readme(eventname, reprevent(towrite))
+
     # Plot conversion points
     if plots:
-        plot_hits(result, eventname)
+        plot_hits([res[0] for res in result], eventname)
     
-    # Add more to readme
-    readme(eventname, reprevent(towrite))
-
 
 if __name__ == '__main__':
     start = time.perf_counter()

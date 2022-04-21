@@ -55,7 +55,7 @@ def hits(NS: object, traj: np.ndarray, pprecision: int = 100) -> np.ndarray:
             tsol = brentq(toroot, a=ts[zero], b=ts[zero+1], xtol=1e-16)
             xsol, ysol, zsol = smthtraj[0](tmin+tsol)
             vxsol, vysol, vzsol = smthtraj[1](tmin+tsol)
-            sols.append([tsol, xsol, ysol, zsol, vxsol, vysol, vzsol, traj.T[-1][0]])
+            sols.append([tmin+tsol, xsol, ysol, zsol, vxsol, vysol, vzsol, traj.T[-1][0]])
         except (ValueError, SystemError) as e:
             # print("Error in finding hits (root finding): ", e)
             continue
