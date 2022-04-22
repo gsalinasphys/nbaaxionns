@@ -6,7 +6,7 @@ import numpy as np
 from scipy.optimize import brentq, root_scalar
 
 from scripts.basic import mag, mydot, randdirs3d, zeroat
-from scripts.globals import G_eV2, c, eV_GHz, gag, km_eVinv, maGHz, outdir
+from scripts.globals import ma, outdir
 from scripts.orbits import smoothtraj
 
 
@@ -15,7 +15,7 @@ def rc(NS: object, position: np.ndarray, time: float, exact: bool = False) -> fl
     dir = position/mag(position)
     if not exact:
         def to_min(x: float) -> float:
-            return NS.wp(x*dir, time) - maGHz
+            return 1e5*NS.wp(x*dir, time) - ma
         
     try:
         rc = root_scalar(to_min, bracket=[NS.radius, 100*NS.radius], xtol=1e-10, rtol=1e-10).root

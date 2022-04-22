@@ -15,9 +15,9 @@ import numpy as np
 warnings.filterwarnings("ignore")
 
 from classes import AxionMiniclusterNFW, AxionStar, NeutronStar, Particles
-from scripts import (Msun, allhits, cylmax, gag, id_gen, joinnpys, local_run,
-                     ma, massincyl, outdir, plot_hits, plot_trajs, readme,
-                     roche, selectrvs, singletrajs, trajAC, trajs)
+from scripts import (Msun, allhits, cylmax, id_gen, joinnpys, local_run, ma,
+                     massincyl, outdir, plot_hits, plot_trajs, readme, roche,
+                     selectrvs, singletrajs, trajAC, trajs)
 
 
 # Separate __repr__ functions, as Numba classes do not allow for them
@@ -180,7 +180,6 @@ def main() -> None:
     readme(eventname,
            f"""Event name:                 {eventname}
 Axion mass:                 {ma} x 10^-5 eV
-Axion-photon coupling:      {gag} x 10^-14 GeV-1
 \n""")
     readme(eventname, repr(NS) + '\n')
     readme(eventname, repr(AC) + '\n')

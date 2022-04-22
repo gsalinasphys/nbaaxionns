@@ -1,25 +1,21 @@
-from math import pi
+from math import pi, sqrt
 
 from numba.experimental import jitclass
 
 local_run = True
 
 ma = 1                          # Axion mass (10^{-5} eV)
-gag = 1.                        # Axion-photon coupling (10^{-14} GeV^{-1})
 
-
-G = 1.325e11                    # Newton's constant (km^3/(M_Sun s^2))
-c = 2.99792458*1e5              # Speed of light in km/s
+G = 1.32712e11                  # Newton's constant (km^3/(M_Sun s^2))
+c = 2.99792*1e5                 # Speed of light in km/s
+me = 5.0e5                      # Electron mass (eV)
+alpha = 1/137                   # Fine structure constant
+e = sqrt(4*pi*alpha)            # Electron charge in natural units
+hbar = 6.582119e-16             # Planck constant (eV*s)
 rho_eq = 5.46e-28               # Energy density at MR equality in 10^{-10}*M_Sun/km^3
 Msun = 1.1157e+66               # Solar mass in eV
 
-# Conversion factors
-eV_GHz = 2.41812e5 * 2*pi
-km_eVinv = 5.067728930e9
-G_eV2 = 0.0692507779
-MSun_eV = 1.115746686e66
-
-maGHz = 1e-5 * eV_GHz * ma      # Axion mass in GHz
+G_eV2 = 1.95e-2                 # Convert Gauss to eV^2
 
 if local_run:
     outdir = 'output/'
