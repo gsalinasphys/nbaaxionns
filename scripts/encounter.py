@@ -1,15 +1,13 @@
 from math import sqrt
-from typing import Callable
 
 import numpy as np
 from classes.particles import Particles
 from numba import njit
 
-from scripts.basic import (mag, nums_vs, randdir2d, randdir3d, randdirs3d,
-                           repeat)
+from scripts.basic import mag, nums_vs, randdir2d, randdirs3d, repeat
 from scripts.globals import G
 from scripts.metropolis import metropolis, rdistr, rincyl
-from scripts.orbits import add_ps, min_approach, rm_far, trajs, update_ps
+from scripts.orbits import add_ps, min_approach, rm_far, update_ps
 
 
 # Roche radius (km), NS mass in M_Sun and axion clump mass in 10^{-10}M_Sun

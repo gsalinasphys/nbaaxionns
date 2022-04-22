@@ -3,11 +3,9 @@ from typing import Generator
 
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib import markers
-from mpl_toolkits.mplot3d import Axes3D
 from scipy.optimize import brentq, root_scalar
 
-from scripts.basic import mag, mydot, nums_vs, randdirs3d, repeat, zeroat
+from scripts.basic import mag, mydot, randdirs3d, zeroat
 from scripts.globals import G_eV2, c, eV_GHz, gag, km_eVinv, maGHz, outdir
 from scripts.orbits import smoothtraj
 
