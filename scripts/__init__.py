@@ -7,7 +7,7 @@ from scripts.encounter import (cylmax, drawrvs, massincyl, roche, selectrvs,
 from scripts.filehandl import id_gen, joinnpys, readme
 from scripts.globals import (EmptyClass, G, G_eV2, Msun, MSun_eV, c, eV_GHz,
                              gag, km_eVinv, local_run, ma, maGHz, outdir,
-                             rho_eq, yr)
+                             rho_eq)
 from scripts.metropolis import (cyldistr, metropolis, proposal, rdistr, rincyl,
                                 stepdistr)
 from scripts.orbits import (add_ps, energy, grav_en, min_approach,

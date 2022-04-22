@@ -74,22 +74,3 @@ def plot_hits(ahits: np.ndarray, eventname: str, nmax: int = 100_000) -> None:
 
     plt.savefig(outdir + eventname + '/' + eventname + 'conversion.png')
     plt.close()
-
-def prob(hit: np.ndarray, NS: object) -> float:
-    time, position, velocity = hit[1], hit[2:5], hit[5:8]
-
-    k = maGHz*mag(velocity)/c    # in GHz
-    theta = mydot(NS.B(position, time), velocity)/(mag(NS.B(position, time))*mag(velocity))
-    
-    ydir = np.cross(velocity, np.cross(velocity, NS.B(position, time)))
-    ydir /= mag(ydir)
-    sdir = cos(theta)*ydir + sin(theta)*velocity/mag(velocity)
-    sdir /= mag(sdir)
-
-    eps = 1e-8
-    dr = sdir*eps
-    dwp = NS.wp(position+dr, time) - NS.wp(position, time)
-    
-    wpp = dwp/eps
-    
-    return eV_GHz * G_eV2**2 * km_eVinv * 1.e-18/2. * (gag*mag(NS.B(position, time))*sin(theta))**2 * pi * maGHz**5 / (2*k*abs(wpp)) / (k**2+(maGHz*sin(theta))**2)**2
