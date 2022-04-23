@@ -4,8 +4,6 @@ import time
 
 import matplotlib as mpl
 
-from scripts.encounter import drawrvs
-
 mpl.rcParams['text.usetex'] = True
 mpl.rcParams['figure.dpi']= 600
 import warnings
@@ -15,9 +13,10 @@ import numpy as np
 warnings.filterwarnings("ignore")
 
 from classes import AxionMiniclusterNFW, AxionStar, NeutronStar, Particles
-from scripts import (Msun, allhits, cylmax, id_gen, joinnpys, local_run, ma,
-                     massincyl, outdir, plot_hits, plot_trajs, readme, roche,
-                     selectrvs, singletrajs, trajAC, trajs)
+from scripts import (Msun, allhits, cylmax, drawrvs, id_gen, joinnpys,
+                     local_run, ma, mag, massincyl, outdir, plot_hits,
+                     plot_trajs, readme, roche, selectrvs, singletrajs, trajAC,
+                     trajs)
 
 
 # Separate __repr__ functions, as Numba classes do not allow for them
@@ -147,6 +146,7 @@ def run(nps: int,
     # Finding the points where trajectories hit the conversion surface
     ahits = list(allhits(NS, simtrajs))
     ahits = np.array([hit for subhits in ahits for hit in subhits])
+    ahits = ahits[mag(ahits[:, 2:5]) > NS.radius]
     
     if fnamehits:
         np.save(outdir + fnamehits, ahits)
@@ -164,7 +164,7 @@ def main() -> None:
     if ACparams[0]:
         ACmass, delta, c, vdisptype = ACparams[1:]
         AC = AxionMiniclusterNFW(mass=ACmass, delta=delta, c=c, vdisptype=vdisptype)
-        lbounds = (-1., 1.)
+        lbounds = (-1./100, 1./100)
     else:
         ACmass, vdisptype, prf = ACparams[1:]
         AC = AxionStar(mass=ACmass, vdisptype=vdisptype, prf=prf)
@@ -177,6 +177,11 @@ def main() -> None:
     # Adding some info to README file
     eventname = ('MC' if ACparams[0] else 'AS') + id_gen() if not loadedtrajs else loadedtrajs
     os.makedirs(outdir + eventname, exist_ok=True)
+    try:
+        os.remove(''.join([outdir, eventname, '/README.txt']))
+        os.remove(''.join([outdir, eventname, '/', eventname, 'conversion.npy']))
+    except OSError:
+        pass
     readme(eventname,
            f"""Event name:                 {eventname}
 Axion mass:                 {ma} x 10^-5 eV
@@ -193,7 +198,7 @@ Axion mass:                 {ma} x 10^-5 eV
     
     # Run function 'run' in parallel
     ncores = mp.cpu_count() - local_run
-    nbatches = 50*ncores
+    nbatches = 10*ncores
     with mp.Pool(processes=ncores) as pool:
         result = pool.starmap(run, [(nps, ACparams, lbounds,
                                      NSparams, rprecision, padding,

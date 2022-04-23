@@ -60,10 +60,10 @@ class NeutronStar:
         d = mag(position)
         return 3*mydot(position, self.m(time))/d**5*position - self.m(time)/d**3
 
-    def wp(self, position: np.ndarray, time: float) -> float:  # Plasma frequency in eV
-        return sqrt(4*pi*e/me * 1e14*G_eV2*hbar) * sqrt(abs(mydot(self.B(position, time), self.axis))/self.T)
+    def wp(self, position: np.ndarray, time: float) -> float:  # Plasma frequency in 10^{-5}eV
+        return 1e5 * sqrt(4*pi*e/me * 1e14*G_eV2*hbar) * sqrt(abs(mydot(self.B(position, time), self.axis))/self.T)
     
     # Maximum radius of conversion with some padding (in percent)
     def rcmax(self, padding: float = 0.) -> float:
-        return (1+padding/100) * 9.88422**(2./3) * self.radius * (self.B0/(self.T*ma**2))**(1/3)
+        return (1+padding/100) * (1e5*sqrt(4*pi*e/me * 1e14*G_eV2*hbar))**(2./3) * self.radius * (self.B0/(self.T*ma**2))**(1/3)
 

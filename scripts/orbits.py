@@ -135,7 +135,7 @@ def torder(traj: np.ndarray, tfix: float = None) -> None:
 def smoothtraj(traj: np.ndarray, tfix: float = None):
     try:
         traj = torder(traj, tfix)
-        return interp1d(traj.T[0], traj.T[1:4], kind=11), interp1d(traj.T[0], traj.T[4:7], kind=11)
+        return traj.T[0], interp1d(traj.T[0], traj.T[1:4], kind=11), interp1d(traj.T[0], traj.T[4:7], kind=11)
     except (TypeError, ValueError):
         return None
 
@@ -147,7 +147,7 @@ def plot_traj(traj: np.ndarray, show: bool = False, tfix: float = None) -> None:
     try:
         tmin, tmax = min(traj.T[0]), max(traj.T[0])
         ts = np.linspace(tmin, tmax, 1000)
-        smtraj = smoothtraj(traj, tfix)[0](ts)
+        smtraj = smoothtraj(traj, tfix)[1](ts)
         ax.plot(smtraj[2], smtraj[0], lw=.1)
         
     except (TypeError, ValueError):
@@ -170,7 +170,7 @@ def plot_trajs(trajs: np.ndarray, NS: object, fname: str = None, nmax: int = 1_0
         try:
             tmin, tmax = min(traj.T[0]), max(traj.T[0])
             ts = np.linspace(tmin, tmax, 1000)
-            smtraj = smoothtraj(traj, NS.T)[0](ts)
+            smtraj = smoothtraj(traj, NS.T)[1](ts)
             ax.plot(smtraj[2], smtraj[0], lw=.1)
             
         except (TypeError, ValueError):
