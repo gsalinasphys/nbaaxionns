@@ -1,9 +1,11 @@
+import random
 from math import pi, sqrt
 
 import numpy as np
 from numba import float64, int8, int64
 from numba.experimental import jitclass
-from scripts.basic import cases, mag, myint, myintfrom, myintupto
+from scripts.basic import (cases, mag, myint, myintfrom, myintupto, nums_vs,
+                           randdirs3d)
 from scripts.globals import G, ma
 
 spec = [
@@ -43,7 +45,7 @@ class AxionStar:
               norm*self.prf[(mag(positions-self.rCM)/self.rtrunc()*len(self.prf)).astype(int64)],
               np.zeros(len(positions)))
     
-        # Enclosed mass given position
+    # Enclosed mass given position in units of 10^{-10}*M_Sun
     def encl_mass(self, positions: np.ndarray) -> np.ndarray:
         rs = np.linspace(0, self.rtrunc(), len(self.prf))
         norm = self.mass/myint(4*pi*rs**2*self.prf, rs)
@@ -61,16 +63,25 @@ class AxionStar:
         norm = self.mass/myint(4*pi*rs**2*self.prf, rs)
         if isinstance(positions, float):    # Assumes axion star is at the origin
             ind = int64(mag(positions)/self.rtrunc()*len(self.prf))
-            return -G*self.encl_mass(positions)/positions - G*norm*myint(4*pi*rs[ind:]*self.prf[ind:], rs[ind:])
+            return -1e-10*G*self.encl_mass(positions)/positions - 1e-10*G*norm*myint(4*pi*rs[ind:]*self.prf[ind:], rs[ind:])
         
         ds = mag(positions-self.rCM)
         inds = (ds/self.rtrunc()*len(self.prf)).astype(int64)
         encl_ms = self.encl_mass(positions)
         return cases(mag(positions-self.rCM)-self.rtrunc(),
-                    -G*encl_ms/ds - G*norm*np.array(list(myintfrom(4*pi*rs*self.prf, rs, inds))),
-                    -G*self.mass/ds)
+                    -1e-10*G*encl_ms/ds - 1e-10*G*norm*np.array(list(myintfrom(4*pi*rs*self.prf, rs, inds))),
+                    -1e-10*G*self.mass/ds)
         
     # Escape velocity in km/s
-    def vesc(self, position: np.ndarray) -> float:
-        return sqrt(abs(2*self.grav_pot(position)))
+    def vesc(self, positions: np.ndarray) -> float:
+        return np.sqrt(np.abs(2*self.grav_pot(positions)))
+    
+    # Maximum value of velocity dispersion
+    def deltav(self) -> float:
+        return self.vesc(1.e-4)
+    
+    # Velocity dispersion for many positions inside the axion star
+    def vsdisp(self, positions: np.ndarray) -> np.ndarray:
+        if self.vdisptype == 1: # Flat distribution
+            return nums_vs(np.random.random(size=len(positions))*self.vesc(positions), randdirs3d(len(positions)))
         

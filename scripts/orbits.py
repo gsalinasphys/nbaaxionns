@@ -158,6 +158,8 @@ def plot_traj(traj: np.ndarray, show: bool = False, tfix: float = None) -> None:
     
     if show:
             plt.show()
+            
+    plt.close()
     
 # Plot trajectories
 def plot_trajs(trajs: np.ndarray, NS: object, fname: str = None, nmax: int = 1_000, show: bool = False) -> None:

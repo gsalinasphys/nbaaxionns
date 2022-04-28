@@ -4,6 +4,8 @@ import time
 
 import matplotlib as mpl
 
+from scripts.orbits import min_approach
+
 mpl.rcParams['text.usetex'] = True
 mpl.rcParams['figure.dpi']= 600
 import warnings
@@ -127,6 +129,8 @@ def run(nps: int,
     NSmass, radius, T, axis, B0, misalign, psi0 = NSparams
     NS = NeutronStar(mass=NSmass, radius=radius, T=T, axis=axis, B0=B0, misalign=misalign, psi0=psi0)
     
+    print("Started drawing trajectories from axion clump.")
+    
     # Drawing initial positions and velocities of particles that will hit the neutron star conversion surface
     if not loadedtrajs:
         if ACparams[0]:
@@ -136,6 +140,8 @@ def run(nps: int,
             rvsinps, ndrawn = drawrvs(AC, NS, nps)
             ps = Particles(rvsinps[0], rvsinps[1])
     
+    print("Done drawing trajectories from axion clump.")
+    
     # Evolving trajectories
     if loadedtrajs:
         simtrajs = np.load(outdir + loadedtrajs + '.npy')
@@ -143,10 +149,14 @@ def run(nps: int,
         simtrajs = trajs(ps, NS, (NS.radius, NS.rcmax(padding)), rprecision, fnametrajs)
     simtrajs = [np.array(simtraj) for simtraj in list(singletrajs(simtrajs))]
     
+    print("Evolution of trajectories finished.")
+    
     # Finding the points where trajectories hit the conversion surface
     ahits = list(allhits(NS, simtrajs))
     ahits = np.array([hit for subhits in ahits for hit in subhits])
     ahits = ahits[mag(ahits[:, 2:5]) > NS.radius]
+    
+    print("Found all hits on conversion surface")
     
     if fnamehits:
         np.save(outdir + fnamehits, ahits)
@@ -155,16 +165,16 @@ def run(nps: int,
 
 def main() -> None:
     # Initial parameters
-    nps, b, vin, rprecision, padding = 2560, 0.2, 200., 5e-2, 10.
+    nps, b, vin, rprecision, padding = 2560, 3., 200., 5e-2, 10.
     savetrajs, savehits, plots, loadedtrajs = True, True, False, None
 
     # Building axion clump and neutron star
-    ACparams = (1, 1., 1.55, 100., 1)
-    # ACparams = (0, 0.01, 0, np.load("input/AS_profile_2R99.npy")[::100])
+    # ACparams = (1, 1., 1.55, 100., 1)
+    ACparams = (0, 0.01, 1, np.load("input/AS_profile_2R99.npy")[::100])
     if ACparams[0]:
         ACmass, delta, c, vdisptype = ACparams[1:]
         AC = AxionMiniclusterNFW(mass=ACmass, delta=delta, c=c, vdisptype=vdisptype)
-        lbounds = (-1./100, 1./100)
+        lbounds = (-1., 1.)
     else:
         ACmass, vdisptype, prf = ACparams[1:]
         AC = AxionStar(mass=ACmass, vdisptype=vdisptype, prf=prf)
@@ -195,6 +205,10 @@ Axion mass:                 {ma} x 10^-5 eV
     trajAC(pAC, NS, roche(AC, NS), rprecision)
     AC.rCM, AC.vCM = pAC.positions[0], pAC.velocities[0]
     ACparams = (ACparams[0],) + (AC.rCM, AC.vCM) + ACparams[1:]
+    
+    if b > cylmax(AC, NS)+1:
+        print("This axion clump will not get close enough to the neutron star!")
+        return None
     
     # Run function 'run' in parallel
     ncores = mp.cpu_count() - local_run

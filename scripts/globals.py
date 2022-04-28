@@ -2,7 +2,7 @@ from math import pi, sqrt
 
 from numba.experimental import jitclass
 
-local_run = False
+local_run = True
 
 ma = 1                          # Axion mass (10^{-5} eV)
 

@@ -101,8 +101,13 @@ def randdir3d() -> np.ndarray:
 
 @njit(fastmath=True)
 def randdirs3d(n: int) -> Generator:
+    toret = np.empty((n, 3))
     for ii in range(n):
-        yield randdir3d()
+        rddir = randdir3d()
+        for jj in range(3):
+            toret[ii, jj] = rddir[jj]
+            
+    return toret
         
 # Find where array crosses zero
 @njit
