@@ -1,6 +1,7 @@
 import multiprocessing as mp
 import os
 import time
+import shutil
 
 import matplotlib as mpl
 
@@ -165,12 +166,12 @@ def run(nps: int,
 
 def main() -> None:
     # Initial parameters
-    nps, b, vin, rprecision, padding = 2560, 3., 200., 5e-2, 10.
+    nps, b, vin, rprecision, padding = 160, 3., 200., 5e-2, 10.
     savetrajs, savehits, plots, loadedtrajs = True, True, False, None
 
     # Building axion clump and neutron star
-    # ACparams = (1, 1., 1.55, 100., 1)
-    ACparams = (0, 0.01, 1, np.load("input/AS_profile_2R99.npy")[::100])
+    ACparams = (1, 1., 1.55, 100., 1)
+    # ACparams = (0, 0.01, 1, np.load("input/AS_profile_2R99.npy")[::100])
     if ACparams[0]:
         ACmass, delta, c, vdisptype = ACparams[1:]
         AC = AxionMiniclusterNFW(mass=ACmass, delta=delta, c=c, vdisptype=vdisptype)
@@ -208,11 +209,12 @@ Axion mass:                 {ma} x 10^-5 eV
     
     if b > cylmax(AC, NS)+1:
         print("This axion clump will not get close enough to the neutron star!")
+        shutil.rmtree(outdir + eventname)
         return None
     
     # Run function 'run' in parallel
     ncores = mp.cpu_count() - local_run
-    nbatches = 10*ncores
+    nbatches = ncores
     with mp.Pool(processes=ncores) as pool:
         result = pool.starmap(run, [(nps, ACparams, lbounds,
                                      NSparams, rprecision, padding,
