@@ -39,7 +39,7 @@ class NeutronStar:
             d = mag(positions)
             return cases(d-self.radius,
                         -G*self.mass*positions/self.radius**3,
-                        -G*self.mass/d**2*positions)
+                        -G*self.mass*positions/d**3)
 
         ds = mag(positions)
         return -G*self.mass*nums_vs(heav(ds - self.radius, 1.)/ds**3, positions) - G*self.mass/self.radius**3*nums_vs(heav(-ds + self.radius, 0.), positions)

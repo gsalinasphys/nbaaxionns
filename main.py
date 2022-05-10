@@ -72,6 +72,7 @@ Velocity at Roche radius:   [{params[6][0]:.2e}, {params[6][1]:.2e}, {params[6][
 Sampling cylinder:          R = {params[7]:.2e} km
                             z = {params[8]:.2e} + [{params[9][0]:.2e}, {params[9][1]:.2e}] km
 Axions per trajectory:      {params[10]:.2e}
+Energy conservation:        {params[11]:.2e} %
 """
         )
     else:
@@ -84,6 +85,7 @@ Roche radius:               {params[4]:.2e} km
 Position at Roche radius:   [{params[5][0]:.2e}, {params[5][1]:.2e}, {params[5][2]:.2e}] km
 Velocity at Roche radius:   [{params[6][0]:.2e}, {params[6][1]:.2e}, {params[6][2]:.2e}] km/s
 Axions per trajectory:      {params[7]:.2e}
+Energy conservation:        {params[8]:.2e} %
 """
         )
         
@@ -93,7 +95,7 @@ def run(nps: int,
         ACparams: tuple = (1, np.empty((0,3)), np.empty((0,3)), 1., 1.55, 100., 1),
         lbounds: tuple = (-1., 1.),
         NSparams: tuple = (1.,10.,1.,np.array([0.,0.,1.]),1.,0.,0.),
-        rprecision: float = 5e-2,
+        rprecision: float = 1e-4,
         padding: float = 10.,
         fnametrajs: str = None,
         fnamehits: str = None,
@@ -147,7 +149,7 @@ def run(nps: int,
     if loadedtrajs:
         simtrajs = np.load(outdir + loadedtrajs + '.npy')
     else:
-        simtrajs = trajs(ps, NS, (NS.radius, NS.rcmax(padding)), rprecision, fnametrajs)
+        simtrajs, elchecks = trajs(ps, NS, (NS.radius, NS.rcmax(padding)), rprecision, fnametrajs, True)
     simtrajs = [np.array(simtraj) for simtraj in list(singletrajs(simtrajs))]
     
     print("Evolution of trajectories finished.")
@@ -162,11 +164,11 @@ def run(nps: int,
     if fnamehits:
         np.save(outdir + fnamehits, ahits)
         
-    return ahits, ndrawn if not loadedtrajs else None
+    return ahits, ndrawn if not loadedtrajs else None, elchecks
 
 def main() -> None:
     # Initial parameters
-    nps, b, vin, rprecision, padding = 160, 3., 200., 5e-2, 10.
+    nps, b, vin, rprecision, padding = 160, .2, 200., 5e-5, 10.
     savetrajs, savehits, plots, loadedtrajs = True, True, False, None
 
     # Building axion clump and neutron star
@@ -175,7 +177,7 @@ def main() -> None:
     if ACparams[0]:
         ACmass, delta, c, vdisptype = ACparams[1:]
         AC = AxionMiniclusterNFW(mass=ACmass, delta=delta, c=c, vdisptype=vdisptype)
-        lbounds = (-1., 1.)
+        lbounds = (-1./100, 1./100)
     else:
         ACmass, vdisptype, prf = ACparams[1:]
         AC = AxionStar(mass=ACmass, vdisptype=vdisptype, prf=prf)
@@ -234,16 +236,16 @@ Axion mass:                 {ma} x 10^-5 eV
             plot_trajs(sgltrajs, NS, fname=''.join([outdir, eventname, '/', eventname, 'trajs']))
         
         # Number of axions per trajectory
-        result, ndrawn = np.concatenate([rst[0] for rst in result]), sum([rst[1] for rst in result])
+        result, ndrawn, elcheck = np.concatenate([rst[0] for rst in result]), sum([rst[1] for rst in result]), max([rst[2] for rst in result])
         if ACparams[0]:
             masscyl = massincyl(AC, ((0., cylmax(AC, NS)), lbounds))
             axspertraj = masscyl*1e-10*Msun/(1e-5*ma*ndrawn)
             towrite = (ACparams, rvsin[0], rvsin[1], b*AC.rtrunc(), roche(AC, NS), AC.rCM, AC.vCM,
-                cylmax(AC,NS)*AC.rtrunc(), AC.rCM[2], AC.rtrunc()*np.array(lbounds), axspertraj
+                cylmax(AC,NS)*AC.rtrunc(), AC.rCM[2], AC.rtrunc()*np.array(lbounds), axspertraj, elcheck
                 )
         else:
             axspertraj = AC.mass*1e-10*Msun/(1e-5*ma*ndrawn)
-            towrite = (ACparams[0], rvsin[0], rvsin[1], b*AC.rtrunc(), roche(AC, NS), AC.rCM, AC.vCM, axspertraj)
+            towrite = (ACparams[0], rvsin[0], rvsin[1], b*AC.rtrunc(), roche(AC, NS), AC.rCM, AC.vCM, axspertraj, elcheck)
             
         # Add more to readme
         readme(eventname, reprevent(towrite))

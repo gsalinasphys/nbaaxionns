@@ -17,7 +17,7 @@ def roche(AC: object, NS: object) -> float:
 
 # Full trajectories, use batches of 100 particles for max speed
 @njit
-def trajAC(pAC: object, NS: object, rmin: float, rprecision: float = 5e-2) -> None:
+def trajAC(pAC: object, NS: object, rmin: float, rprecision: float = 1e-4) -> None:
     if min_approach(pAC, NS) > rmin:
         return None
     

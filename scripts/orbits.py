@@ -1,5 +1,6 @@
 import itertools
 from typing import Tuple
+import random
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -56,7 +57,7 @@ def rm_ps(p: object, inds: int) -> None:
 
 # Implementation of Verlet's method to update position and velocity (for reference, see Velocity Verlet in https://en.m.wikipedia.org/wiki/Verlet_integration)
 @njit
-def update_ps(p: object, NS: object, rprecision: float = 5e-2) -> None:
+def update_ps(p: object, NS: object, rprecision: float = 1e-4) -> None:
     # Update accelerations
     p.accelerations = NS.grav_field(p.positions)
 
@@ -80,27 +81,53 @@ def update_ps(p: object, NS: object, rprecision: float = 5e-2) -> None:
         for ii in range(len(p.times)):
             p.nperiods[ii] += p.times[ii]//period
         p.times %= period
-   
+
 # Full trajectories, use batches of 160 particles for max speed (maybe in general 10ncores?)
-def trajs(p: object, NS: object, rlimits: Tuple = None, rprecision: float = 5e-2, fname: str = None) -> None:
+@njit
+def trajs(p: object, NS: object, rlimits: Tuple = None, rprecision: float = 1e-4, niter: int = 10_000) -> None:
     finished = False
     
+    count = 0
+    while not finished or min(mag(p.positions)) < rlimits[1]:
+        print(count)
+        if min(mag(p.positions)) < rlimits[1]:
+            finished = True
+
+        update_ps(p, NS, rprecision=rprecision)
+        count += 1
+
+# Full trajectories, use batches of 160 particles for max speed (maybe in general 10ncores?)
+def trajs(p: object, NS: object, rlimits: Tuple = None, rprecision: float = 1e-4, fname: str = None, elcheck: bool = False) -> None:
+    finished = False
+    
+    if elcheck:
+        ein, lin, maxediff, maxldiff = energy(p, NS), p.ang_momentum(), 0., 0.
+
     data = [[] for i in range(9)]
     while not finished or min(mag(p.positions)) < rlimits[1]:
         if min(mag(p.positions)) < rlimits[1]:
             finished = True
             
         ps_in = np.where(np.logical_and(mag(p.positions) > rlimits[0], mag(p.positions) < rlimits[1]))[0]
-        # Save in the format [tags, times, rx, ry, rz, vx, vy, vz]
-        data[0].extend(ps_in)
-        data[1].extend(p.times[ps_in])
-        data[2].extend(p.positions.T[0][ps_in])
-        data[3].extend(p.positions.T[1][ps_in])
-        data[4].extend(p.positions.T[2][ps_in])
-        data[5].extend(p.velocities.T[0][ps_in])
-        data[6].extend(p.velocities.T[1][ps_in])
-        data[7].extend(p.velocities.T[2][ps_in])
-        data[8].extend(p.nperiods[ps_in])
+        if random.random() < 1e-3:
+            # Save in the format [tags, times, rx, ry, rz, vx, vy, vz]
+            data[0].extend(ps_in)
+            data[1].extend(p.times[ps_in])
+            data[2].extend(p.positions.T[0][ps_in])
+            data[3].extend(p.positions.T[1][ps_in])
+            data[4].extend(p.positions.T[2][ps_in])
+            data[5].extend(p.velocities.T[0][ps_in])
+            data[6].extend(p.velocities.T[1][ps_in])
+            data[7].extend(p.velocities.T[2][ps_in])
+            data[8].extend(p.nperiods[ps_in])
+            
+        # Check energy and angular momentum consservation
+        if elcheck:
+            maxedifftry, maxldifftry = max(abs((energy(p, NS) - ein)/ein)), max(abs(mag(p.ang_momentum() - lin)/mag(lin)))
+            if maxedifftry > maxediff:
+                maxediff = maxedifftry
+            if maxldifftry > maxldiff:
+                maxldiff = maxldifftry
         
         update_ps(p, NS, rprecision=rprecision)
 
@@ -110,7 +137,10 @@ def trajs(p: object, NS: object, rlimits: Tuple = None, rprecision: float = 5e-2
     if fname:
         np.save(outdir + fname, data)
     
-    return data
+    if elcheck:
+        return data, 100*max(maxedifftry, maxldifftry)
+
+    return data, None
 
 # Slice into single trajectories
 def singletrajs(trajs: np.ndarray) -> np.ndarray:
@@ -135,7 +165,7 @@ def torder(traj: np.ndarray, tfix: float = None) -> None:
 def smoothtraj(traj: np.ndarray, tfix: float = None):
     try:
         traj = torder(traj, tfix)
-        return traj.T[0], interp1d(traj.T[0], traj.T[1:4], kind=11), interp1d(traj.T[0], traj.T[4:7], kind=11)
+        return traj.T[0], interp1d(traj.T[0], traj.T[1:4], kind=3), interp1d(traj.T[0], traj.T[4:7], kind=3)
     except (TypeError, ValueError):
         return None
 
