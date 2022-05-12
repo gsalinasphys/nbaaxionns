@@ -1,7 +1,7 @@
 import multiprocessing as mp
 import os
-import time
 import shutil
+import time
 
 import matplotlib as mpl
 
@@ -216,7 +216,7 @@ Axion mass:                 {ma} x 10^-5 eV
     
     # Run function 'run' in parallel
     ncores = mp.cpu_count() - local_run
-    nbatches = ncores
+    nbatches = 40*ncores
     with mp.Pool(processes=ncores) as pool:
         result = pool.starmap(run, [(nps, ACparams, lbounds,
                                      NSparams, rprecision, padding,

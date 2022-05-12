@@ -1,6 +1,6 @@
 import itertools
-from typing import Tuple
 import random
+from typing import Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -109,7 +109,7 @@ def trajs(p: object, NS: object, rlimits: Tuple = None, rprecision: float = 1e-4
             finished = True
             
         ps_in = np.where(np.logical_and(mag(p.positions) > rlimits[0], mag(p.positions) < rlimits[1]))[0]
-        if random.random() < 1e-3:
+        if random.random() < 1e-2:
             # Save in the format [tags, times, rx, ry, rz, vx, vy, vz]
             data[0].extend(ps_in)
             data[1].extend(p.times[ps_in])
@@ -165,7 +165,7 @@ def torder(traj: np.ndarray, tfix: float = None) -> None:
 def smoothtraj(traj: np.ndarray, tfix: float = None):
     try:
         traj = torder(traj, tfix)
-        return traj.T[0], interp1d(traj.T[0], traj.T[1:4], kind=3), interp1d(traj.T[0], traj.T[4:7], kind=3)
+        return traj.T[0], interp1d(traj.T[0], traj.T[1:4], kind=11), interp1d(traj.T[0], traj.T[4:7], kind=11)
     except (TypeError, ValueError):
         return None
 
