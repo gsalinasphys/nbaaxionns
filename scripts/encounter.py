@@ -29,7 +29,7 @@ def trajAC(pAC: object, NS: object, rmin: float, rprecision: float = 1e-4) -> No
         update_ps(pAC, NS, rprecision=rprecision)
 
 # Select initial conditions that will hit close to the neutron star
-def drawrvs(AC: object, NS: object, nps: int, nsamples: int = 640) -> np.ndarray:    
+def drawrvs(AC: object, NS: object, nps: int, nsamples: int = 160) -> np.ndarray:    
     ps = Particles(np.empty((0,1)), np.empty((0,1)))
     ndrawn = 0
     while len(ps.positions) < nps:

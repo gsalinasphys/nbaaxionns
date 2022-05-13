@@ -168,12 +168,12 @@ def run(nps: int,
 
 def main() -> None:
     # Initial parameters
-    nps, b, vin, rprecision, padding = 160, .2, 200., 5e-5, 10.
+    nps, b, vin, rprecision, padding = 160, 1., 200., 5e-5, 10.
     savetrajs, savehits, plots, loadedtrajs = True, True, False, None
 
     # Building axion clump and neutron star
-    ACparams = (1, 1., 1.55, 100., 1)
-    # ACparams = (0, 0.01, 1, np.load("input/AS_profile_2R99.npy")[::100])
+    # ACparams = (1, 1., 1.55, 100., 1)
+    ACparams = (0, 0.01, 1, np.load("input/AS_profile_2R99.npy")[::100])
     if ACparams[0]:
         ACmass, delta, c, vdisptype = ACparams[1:]
         AC = AxionMiniclusterNFW(mass=ACmass, delta=delta, c=c, vdisptype=vdisptype)
@@ -216,7 +216,7 @@ Axion mass:                 {ma} x 10^-5 eV
     
     # Run function 'run' in parallel
     ncores = mp.cpu_count() - local_run
-    nbatches = 40*ncores
+    nbatches = 20*ncores
     with mp.Pool(processes=ncores) as pool:
         result = pool.starmap(run, [(nps, ACparams, lbounds,
                                      NSparams, rprecision, padding,
