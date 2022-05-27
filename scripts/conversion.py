@@ -28,7 +28,7 @@ def conv_surf(NS: object, time: float, nsamples: int = 100_000, exact: bool = Fa
             yield rcii*dir
 
 # Find positions at which trajectory crosses neutron star conversion surface, input a time ordered trajectory
-def hits(NS: object, traj: np.ndarray, pprecision: int = 1_000) -> np.ndarray:
+def hits(NS: object, traj: np.ndarray, pprecision: int = 10_000) -> np.ndarray:
     rvin = traj[0][1:-1]
     traj = traj[1:]
     smthtraj = smoothtraj(traj)
@@ -57,7 +57,7 @@ def hits(NS: object, traj: np.ndarray, pprecision: int = 1_000) -> np.ndarray:
     
     return sols
 
-def allhits(NS: object, trajs: np.ndarray, pprecision: int = 1_000) -> np.ndarray:
+def allhits(NS: object, trajs: np.ndarray, pprecision: int = 10_000) -> np.ndarray:
     for ii, traj in enumerate(trajs):
         yield [[ii] + hit for hit in hits(NS, traj, pprecision)]
         

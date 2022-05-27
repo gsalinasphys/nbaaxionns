@@ -97,7 +97,7 @@ def trajs(p: object, NS: object, rlimits: Tuple = None, rprecision: float = 1e-4
         ps_in = np.where(np.logical_and(mag(p.positions) > rlimits[0], mag(p.positions) < rlimits[1]))[0]
         if first:
             ps_in = np.arange(len(p.positions))
-        if not niter%1_000 or first:
+        if not niter%100 or first:
             # Save in the format [tags, times, rx, ry, rz, vx, vy, vz]
             data[0].extend(ps_in)
             data[1].extend(p.times[ps_in])

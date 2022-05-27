@@ -173,8 +173,8 @@ def run(nps: int,
 
 
 def main() -> None:
-    # Initial parameters
-    nps, b, vin, rprecision, padding = 160, .2, 200., 5e-5, 10.
+    # Initial parameters 
+    nps, b, vin, rprecision, padding = 16, .2, 200., 5e-5, 10.
     savetrajs, savehits, plots, loadedtrajs = True, True, False, None
 
     # Building axion clump and neutron star
