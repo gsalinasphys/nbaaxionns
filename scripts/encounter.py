@@ -92,7 +92,10 @@ def selectrvs(AC: object, NS: object, nps: int, cylbnds: tuple = (-1., 1.), nsam
     while len(ps.positions) < nps:
         ndrawn += nsamples
         
-        rs = metropolis(rincyl, nsamples, x0=np.append(0.1*cylmax(AC, NS)*randdir2d(), zcyl),
+        # rs = metropolis(rincyl, nsamples, x0=np.append(0.1*cylmax(AC, NS)*randdir2d(), zcyl),
+        #                 sigma=np.array([cylmax(AC, NS)/10., cylmax(AC, NS)/10., 0.1*L]),
+        #                 xbounds=((0., cylmax(AC, NS)), cylbnds), O=AC)        
+        rs = metropolis(rincyl, nsamples, x0=np.array([0.,0.,zcyl]),
                         sigma=np.array([cylmax(AC, NS)/10., cylmax(AC, NS)/10., 0.1*L]),
                         xbounds=((0., cylmax(AC, NS)), cylbnds), O=AC)
         rsdrawn = AC.rCM*np.array([0.,0.,1.]) + AC.rtrunc()*np.array(list(rs))

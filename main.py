@@ -19,7 +19,7 @@ mpl.rcParams['text.usetex'] = True
 mpl.rcParams['figure.dpi'] = 600
 
 
-warnings.filterwarnings("ignore")
+# warnings.filterwarnings("ignore")
 
 
 # Separate __repr__ functions, as Numba classes do not allow for them
@@ -174,7 +174,7 @@ def run(nps: int,
 
 def main() -> None:
     # Initial parameters 
-    nps, b, vin, rprecision, padding = 160, .2, 200., 5e-5, 10.
+    nps, b, vin, rprecision, padding = 16, .2, 200., 5e-5, 10.
     savetrajs, savehits, plots, loadedtrajs = True, True, False, None
 
     # Building axion clump and neutron star
@@ -226,7 +226,7 @@ Axion mass:                 {ma} x 10^-5 eV
 
     # Run function 'run' in parallel
     ncores = mp.cpu_count() - local_run
-    nbatches = 10*ncores
+    nbatches = ncores
     with mp.Pool(processes=ncores) as pool:
         result = pool.starmap(run, [(nps, ACparams, lbounds,
                                      NSparams, rprecision, padding,
