@@ -2,31 +2,31 @@ import multiprocessing as mp
 import os
 import shutil
 import time
-
-import matplotlib as mpl
-
-from scripts.orbits import min_approach
-
-mpl.rcParams['text.usetex'] = True
-mpl.rcParams['figure.dpi']= 600
 import warnings
 
+import matplotlib as mpl
 import numpy as np
-
-warnings.filterwarnings("ignore")
+from mpl_toolkits.mplot3d import Axes3D
 
 from classes import AxionMiniclusterNFW, AxionStar, NeutronStar, Particles
 from scripts import (Msun, allhits, cylmax, drawrvs, id_gen, joinnpys,
                      local_run, ma, mag, massincyl, outdir, plot_hits,
-                     plot_trajs, readme, roche, selectrvs, singletrajs, trajAC,
-                     trajs)
+                     plot_trajs, readme, roche, selectrvs, singletrajs, torder,
+                     trajAC, trajs)
+from scripts.orbits import min_approach
+
+mpl.rcParams['text.usetex'] = True
+mpl.rcParams['figure.dpi'] = 600
+
+
+warnings.filterwarnings("ignore")
 
 
 # Separate __repr__ functions, as Numba classes do not allow for them
 def repr(O: object) -> str:
     if isinstance(O, NeutronStar):
         return (
-f"""---------- Neutron Star properties ----------
+            f"""---------- Neutron Star properties ----------
 Mass:                       {O.mass} M_Sun
 Radius:                     {O.radius} km
 Period:                     {O.T} s
@@ -39,7 +39,7 @@ Max conversion radius:      {O.rcmax():.4} km
         )
     elif isinstance(O, AxionMiniclusterNFW):
         return (
-f"""---------- Axion Clump properties ----------
+            f"""---------- Axion Clump properties ----------
 Clump type:                 Axion Minicluster (NFW profile)
 Mass:                       {O.mass} x 10^-10 M_Sun
 Truncation Radius:          {O.rtrunc():.2e} km
@@ -50,7 +50,7 @@ Velocity dispersion:        {'Maxwell-Boltzmann' if O.vdisptype else 'None'}
         )
     elif isinstance(O, AxionStar):
         return (
-f"""---------- Axion Clump properties ----------
+            f"""---------- Axion Clump properties ----------
 Clump type:                 Dilute Axion Star
 Mass:                       {100*O.mass} x 10^-12 M_Sun
 Radius 99%:                 {O.R99():.2e} km
@@ -58,11 +58,12 @@ Truncation Radius:          {O.rtrunc():.2e} km
 Velocity dispersion:        {'Flat' if O.vdisptype else 'None'}
 """
         )
-        
+
+
 def reprevent(params: tuple) -> str:
     if params[0]:
         return (
-f"""---------- Encounter data ----------
+            f"""---------- Encounter data ----------
 Initial clump position:     [{params[1][0]:.2e}, {params[1][1]:.2e}, {params[1][2]:.2e}] km
 Initial clump velocity:     [{params[2][0]:.2e}, {params[2][1]:.2e}, {params[2][2]:.2e}] km/s
 Impact parameter:           {params[3]:.2e} km
@@ -77,7 +78,7 @@ Energy conservation:        {params[11]:.2e} %
         )
     else:
         return (
-f"""---------- Encounter data ----------
+            f"""---------- Encounter data ----------
 Initial clump position:     [{params[1][0]:.2e}, {params[1][1]:.2e}, {params[1][2]:.2e}] km
 Initial clump velocity:     [{params[2][0]:.2e}, {params[2][1]:.2e}, {params[2][2]:.2e}] km/s
 Impact parameter:           {params[3]:.2e} km
@@ -88,13 +89,13 @@ Axions per trajectory:      {params[7]:.2e}
 Energy conservation:        {params[8]:.2e} %
 """
         )
-        
 
 
-def run(nps: int, 
-        ACparams: tuple = (1, np.empty((0,3)), np.empty((0,3)), 1., 1.55, 100., 1),
+def run(nps: int,
+        ACparams: tuple = (1, np.empty((0, 3)),
+                           np.empty((0, 3)), 1., 1.55, 100., 1),
         lbounds: tuple = (-1., 1.),
-        NSparams: tuple = (1.,10.,1.,np.array([0.,0.,1.]),1.,0.,0.),
+        NSparams: tuple = (1., 10., 1., np.array([0., 0., 1.]), 1., 0., 0.),
         rprecision: float = 1e-4,
         padding: float = 10.,
         fnametrajs: str = None,
@@ -124,16 +125,19 @@ def run(nps: int,
     # Building axion clump and neutron star inside function, needed for multiprocess
     if ACparams[0]:
         rCM, vCM, ACmass, delta, c, vdisptype = ACparams[1:]
-        AC = AxionMiniclusterNFW(rCM=rCM, vCM=vCM, mass=ACmass, delta=delta, c=c, vdisptype=vdisptype)
+        AC = AxionMiniclusterNFW(
+            rCM=rCM, vCM=vCM, mass=ACmass, delta=delta, c=c, vdisptype=vdisptype)
     else:
         rCM, vCM, ACmass, vdisptype, prf = ACparams[1:]
-        AC = AxionStar(rCM=rCM, vCM=vCM, mass=ACmass, vdisptype=vdisptype, prf=prf)
-    
+        AC = AxionStar(rCM=rCM, vCM=vCM, mass=ACmass,
+                       vdisptype=vdisptype, prf=prf)
+
     NSmass, radius, T, axis, B0, misalign, psi0 = NSparams
-    NS = NeutronStar(mass=NSmass, radius=radius, T=T, axis=axis, B0=B0, misalign=misalign, psi0=psi0)
-    
+    NS = NeutronStar(mass=NSmass, radius=radius, T=T,
+                     axis=axis, B0=B0, misalign=misalign, psi0=psi0)
+
     print("Started drawing trajectories from axion clump.")
-    
+
     # Drawing initial positions and velocities of particles that will hit the neutron star conversion surface
     if not loadedtrajs:
         if ACparams[0]:
@@ -142,57 +146,63 @@ def run(nps: int,
         else:
             rvsinps, ndrawn = drawrvs(AC, NS, nps)
             ps = Particles(rvsinps[0], rvsinps[1])
-    
+
     print("Done drawing trajectories from axion clump.")
-    
+
     # Evolving trajectories
     if loadedtrajs:
         simtrajs = np.load(outdir + loadedtrajs + '.npy')
     else:
-        simtrajs, elchecks = trajs(ps, NS, (NS.radius, NS.rcmax(padding)), rprecision, fnametrajs, True)
-    simtrajs = [np.array(simtraj) for simtraj in list(singletrajs(simtrajs))]
-    
+        simtrajs, elchecks = trajs(
+            ps, NS, (NS.radius, NS.rcmax(padding)), rprecision, fnametrajs, True)
+    simtrajs = [torder(np.array(simtraj), NS.T) for simtraj in list(singletrajs(simtrajs))]
+
     print("Evolution of trajectories finished.")
-    
+
     # Finding the points where trajectories hit the conversion surface
     ahits = list(allhits(NS, simtrajs))
     ahits = np.array([hit for subhits in ahits for hit in subhits])
     ahits = ahits[mag(ahits[:, 2:5]) > NS.radius]
-    
+
     print("Found all hits on conversion surface")
-    
+
     if fnamehits:
         np.save(outdir + fnamehits, ahits)
-        
+
     return ahits, ndrawn if not loadedtrajs else None, elchecks
+
 
 def main() -> None:
     # Initial parameters
-    nps, b, vin, rprecision, padding = 160, 1., 200., 5e-5, 10.
+    nps, b, vin, rprecision, padding = 160, .2, 200., 5e-5, 10.
     savetrajs, savehits, plots, loadedtrajs = True, True, False, None
 
     # Building axion clump and neutron star
-    # ACparams = (1, 1., 1.55, 100., 1)
-    ACparams = (0, 0.01, 1, np.load("input/AS_profile_2R99.npy")[::100])
+    ACparams = (1, 1., 1.55, 100., 1)
+    # ACparams = (0, 0.01, 1, np.load("input/AS_profile_2R99.npy")[::100])
     if ACparams[0]:
         ACmass, delta, c, vdisptype = ACparams[1:]
-        AC = AxionMiniclusterNFW(mass=ACmass, delta=delta, c=c, vdisptype=vdisptype)
+        AC = AxionMiniclusterNFW(
+            mass=ACmass, delta=delta, c=c, vdisptype=vdisptype)
         lbounds = (-1./100, 1./100)
     else:
         ACmass, vdisptype, prf = ACparams[1:]
         AC = AxionStar(mass=ACmass, vdisptype=vdisptype, prf=prf)
         lbounds = (-1., 1.)
-    
-    NSparams = (1.,10.,1.,np.array([0.,0.,1.]),1.,0.,0.)
+
+    NSparams = (1., 10., 1., np.array([0., 0., 1.]), 1., 0., 0.)
     NSmass, radius, T, axis, B0, misalign, psi0 = NSparams
-    NS = NeutronStar(mass=NSmass, radius=radius, T=T, axis=axis, B0=B0, misalign=misalign, psi0=psi0)
-    
+    NS = NeutronStar(mass=NSmass, radius=radius, T=T,
+                     axis=axis, B0=B0, misalign=misalign, psi0=psi0)
+
     # Adding some info to README file
-    eventname = ('MC' if ACparams[0] else 'AS') + id_gen() if not loadedtrajs else loadedtrajs
+    eventname = ('MC' if ACparams[0] else 'AS') + \
+        id_gen() if not loadedtrajs else loadedtrajs
     os.makedirs(outdir + eventname, exist_ok=True)
     try:
         os.remove(''.join([outdir, eventname, '/README.txt']))
-        os.remove(''.join([outdir, eventname, '/', eventname, 'conversion.npy']))
+        os.remove(
+            ''.join([outdir, eventname, '/', eventname, 'conversion.npy']))
     except OSError:
         pass
     readme(eventname,
@@ -201,64 +211,71 @@ Axion mass:                 {ma} x 10^-5 eV
 \n""")
     readme(eventname, repr(NS) + '\n')
     readme(eventname, repr(AC) + '\n')
-    
+
     # Evolve axion clump up to Roche radius
-    rvsin = np.array([b*AC.rtrunc(), 0., 1e16]), np.array([0.,0.,-vin])
+    rvsin = np.array([b*AC.rtrunc(), 0., 1e16]), np.array([0., 0., -vin])
     pAC = Particles(np.array([rvsin[0]]), np.array([rvsin[1]]))
     trajAC(pAC, NS, roche(AC, NS), rprecision)
     AC.rCM, AC.vCM = pAC.positions[0], pAC.velocities[0]
     ACparams = (ACparams[0],) + (AC.rCM, AC.vCM) + ACparams[1:]
-    
+
     if b > cylmax(AC, NS)+1:
         print("This axion clump will not get close enough to the neutron star!")
         shutil.rmtree(outdir + eventname)
         return None
-    
+
     # Run function 'run' in parallel
     ncores = mp.cpu_count() - local_run
-    nbatches = 20*ncores
+    nbatches = ncores
     with mp.Pool(processes=ncores) as pool:
         result = pool.starmap(run, [(nps, ACparams, lbounds,
                                      NSparams, rprecision, padding,
-                                     eventname+'/'+eventname+f'_{ii}'+'trajs' if savetrajs else None, 
-                                     eventname+'/'+eventname+f'_{ii}'+'conversion' if savehits else None,
+                                     eventname+'/'+eventname +
+                                     f'_{ii}'+'trajs' if savetrajs else None,
+                                     eventname+'/'+eventname +
+                                     f'_{ii}'+'conversion' if savehits else None,
                                      eventname+'/'+eventname+f'_{ii}'+'trajs' if loadedtrajs else None)
                                     for ii in range(nbatches)])
-    
+
     # Join all the generated files
     joinnpys(eventname)
-    
+
     if not loadedtrajs:
         # Plot trajectories
         if plots:
-            trajs = np.load(''.join([outdir, eventname, '/', eventname, 'trajs.npy']))
-            sgltrajs = list(singletrajs(trajs))
-            plot_trajs(sgltrajs, NS, fname=''.join([outdir, eventname, '/', eventname, 'trajs']))
-        
+            trajs = np.load(
+                ''.join([outdir, eventname, '/', eventname, '_0trajs.npy']))
+            sgltrajs = [torder(np.array(simtraj), NS.T)[1:] for simtraj in list(singletrajs(trajs))]
+            plot_trajs(sgltrajs, NS, fname=''.join(
+                [outdir, eventname, '/', eventname, 'trajs']))
+
         # Number of axions per trajectory
-        result, ndrawn, elcheck = np.concatenate([rst[0] for rst in result]), sum([rst[1] for rst in result]), max([rst[2] for rst in result])
+        result, ndrawn, elcheck = np.concatenate([rst[0] for rst in result]), sum(
+            [rst[1] for rst in result]), max([rst[2] for rst in result])
         if ACparams[0]:
             masscyl = massincyl(AC, ((0., cylmax(AC, NS)), lbounds))
             axspertraj = masscyl*1e-10*Msun/(1e-5*ma*ndrawn)
             towrite = (ACparams, rvsin[0], rvsin[1], b*AC.rtrunc(), roche(AC, NS), AC.rCM, AC.vCM,
-                cylmax(AC,NS)*AC.rtrunc(), AC.rCM[2], AC.rtrunc()*np.array(lbounds), axspertraj, elcheck
-                )
+                       cylmax(
+                           AC, NS)*AC.rtrunc(), AC.rCM[2], AC.rtrunc()*np.array(lbounds), axspertraj, elcheck
+                       )
         else:
             axspertraj = AC.mass*1e-10*Msun/(1e-5*ma*ndrawn)
-            towrite = (ACparams[0], rvsin[0], rvsin[1], b*AC.rtrunc(), roche(AC, NS), AC.rCM, AC.vCM, axspertraj, elcheck)
-            
+            towrite = (ACparams[0], rvsin[0], rvsin[1], b*AC.rtrunc(),
+                       roche(AC, NS), AC.rCM, AC.vCM, axspertraj, elcheck)
+
         # Add more to readme
         readme(eventname, reprevent(towrite))
 
     # Plot conversion points
     if plots:
         plot_hits([res[0] for res in result], eventname)
-    
+
 
 if __name__ == '__main__':
     start = time.perf_counter()
-    
+
     main()
-    
+
     end = time.perf_counter()
     print("Run time: ", np.round(end - start, 2))

@@ -3,6 +3,7 @@ from typing import Generator
 
 import matplotlib.pyplot as plt
 import numpy as np
+from mpl_toolkits.mplot3d import Axes3D
 from scipy.optimize import brentq, root_scalar
 
 from scripts.basic import mag, mydot, randdirs3d, zeroat
@@ -26,9 +27,11 @@ def conv_surf(NS: object, time: float, nsamples: int = 100_000, exact: bool = Fa
         if rcii:
             yield rcii*dir
 
-# Find positions at which trajectory crosses neutron star conversion surface
+# Find positions at which trajectory crosses neutron star conversion surface, input a time ordered trajectory
 def hits(NS: object, traj: np.ndarray, pprecision: int = 1_000) -> np.ndarray:
-    smthtraj = smoothtraj(traj, NS.T)
+    rvin = traj[0][1:-1]
+    traj = traj[1:]
+    smthtraj = smoothtraj(traj)
     tmin, tmax = min(smthtraj[0]), max(smthtraj[0])
     ts = np.linspace(0., tmax-tmin, pprecision)
         
@@ -47,7 +50,7 @@ def hits(NS: object, traj: np.ndarray, pprecision: int = 1_000) -> np.ndarray:
             tsol = brentq(toroot, a=ts[zero], b=ts[zero+1], xtol=1e-16)
             xsol, ysol, zsol = smthtraj[1](tmin+tsol)
             vxsol, vysol, vzsol = smthtraj[2](tmin+tsol)
-            sols.append([tmin+tsol, xsol, ysol, zsol, vxsol, vysol, vzsol, traj.T[-1][0]])
+            sols.append([tmin+tsol, xsol, ysol, zsol, vxsol, vysol, vzsol, traj.T[-1][0], rvin[0], rvin[1], rvin[2], rvin[3], rvin[4], rvin[5]])
         except (ValueError, SystemError) as e:
             print("Error in finding hits (root finding): ", e)
             continue

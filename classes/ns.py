@@ -42,7 +42,9 @@ class NeutronStar:
                         -G*self.mass*positions/d**3)
 
         ds = mag(positions)
-        return -G*self.mass*nums_vs(heav(ds - self.radius, 1.)/ds**3, positions) - G*self.mass/self.radius**3*nums_vs(heav(-ds + self.radius, 0.), positions)
+        return -G*self.mass*nums_vs(heav(ds - self.radius/10000., 1.)/ds**3, positions) - G*self.mass/self.radius**3*nums_vs(heav(-ds + self.radius/10000., 0.), positions)
+        # return -G*self.mass*nums_vs(heav(ds - self.radius, 1.)/ds**3, positions) - G*self.mass/self.radius**3*nums_vs(heav(-ds + self.radius, 0.), positions)
+    
 
    # Find the gravitational potential produced by the neutron star at some position in (km/s)^2
     def grav_pot(self, positions: np.ndarray) -> np.ndarray:       

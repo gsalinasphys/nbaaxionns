@@ -83,33 +83,21 @@ def update_ps(p: object, NS: object, rprecision: float = 1e-4) -> None:
         p.times %= period
 
 # Full trajectories, use batches of 160 particles for max speed (maybe in general 10ncores?)
-@njit
-def trajs(p: object, NS: object, rlimits: Tuple = None, rprecision: float = 1e-4, niter: int = 10_000) -> None:
-    finished = False
-    
-    count = 0
-    while not finished or min(mag(p.positions)) < rlimits[1]:
-        print(count)
-        if min(mag(p.positions)) < rlimits[1]:
-            finished = True
-
-        update_ps(p, NS, rprecision=rprecision)
-        count += 1
-
-# Full trajectories, use batches of 160 particles for max speed (maybe in general 10ncores?)
 def trajs(p: object, NS: object, rlimits: Tuple = None, rprecision: float = 1e-4, fname: str = None, elcheck: bool = False) -> None:
     finished = False
     
     if elcheck:
         ein, lin, maxediff, maxldiff = energy(p, NS), p.ang_momentum(), 0., 0.
 
-    data = [[] for i in range(9)]
+    data, niter, first = [[] for i in range(9)], 0, True
     while not finished or min(mag(p.positions)) < rlimits[1]:
         if min(mag(p.positions)) < rlimits[1]:
             finished = True
             
         ps_in = np.where(np.logical_and(mag(p.positions) > rlimits[0], mag(p.positions) < rlimits[1]))[0]
-        if random.random() < 1e-2:
+        if first:
+            ps_in = np.arange(len(p.positions))
+        if not niter%1_000 or first:
             # Save in the format [tags, times, rx, ry, rz, vx, vy, vz]
             data[0].extend(ps_in)
             data[1].extend(p.times[ps_in])
@@ -130,6 +118,8 @@ def trajs(p: object, NS: object, rlimits: Tuple = None, rprecision: float = 1e-4
                 maxldiff = maxldifftry
         
         update_ps(p, NS, rprecision=rprecision)
+        first = False
+        niter += 1
 
     data = np.array(data).T
     data = data[data[:, 0].argsort()]
@@ -150,34 +140,36 @@ def singletrajs(trajs: np.ndarray) -> np.ndarray:
 
 # Time order trajectories
 @njit
-def torder(traj: np.ndarray, tfix: float = None) -> None:
-    if tfix:
-        tmin, tmax = min(traj.T[0]), max(traj.T[0])
+def torder(traj: np.ndarray, period: float) -> None:
+    nperiodmin = np.sort(traj.T[-1])[1]
+    
+    for ii in range(len(traj.T[0])):
+        traj.T[0][ii] += traj.T[-1][ii] - nperiodmin
+        traj.T[-1][ii] = nperiodmin
         
-        if tmax-tmin > 0.9*tfix:
-            for ii in range(len(traj.T[0])):
-                if traj.T[0][ii] > tfix/2:
-                    traj.T[0][ii] -= tfix
+    traj = traj[traj[:, 0].argsort()]
+    traj[0][0] = 0.
+    traj[0][-1] = 0
+        
+    return traj
 
-    return traj[traj[:, 0].argsort()]
-
-# Interpolate trajectories
-def smoothtraj(traj: np.ndarray, tfix: float = None):
+# Interpolate trajectories, input a time ordered trajectory
+def smoothtraj(traj: np.ndarray):
     try:
-        traj = torder(traj, tfix)
-        return traj.T[0], interp1d(traj.T[0], traj.T[1:4], kind=11), interp1d(traj.T[0], traj.T[4:7], kind=11)
-    except (TypeError, ValueError):
+        return traj.T[0], interp1d(traj.T[0], traj.T[1:4], kind=7), interp1d(traj.T[0], traj.T[4:7], kind=7)
+    except (TypeError, ValueError) as e:
+        print("Interpolation Error: " , e)
         return None
 
-# Plot trajectories
-def plot_traj(traj: np.ndarray, show: bool = False, tfix: float = None) -> None:
+# Plot trajectories, input a time ordered trajectory
+def plot_traj(traj: np.ndarray, show: bool = False) -> None:
     ax = plt.axes()
     ax.scatter(traj.T[3], traj.T[1], s=1, linewidths=0)
     
     try:
         tmin, tmax = min(traj.T[0]), max(traj.T[0])
         ts = np.linspace(tmin, tmax, 1000)
-        smtraj = smoothtraj(traj, tfix)[1](ts)
+        smtraj = smoothtraj(traj)[1](ts)
         ax.plot(smtraj[2], smtraj[0], lw=.1)
         
     except (TypeError, ValueError):
@@ -191,7 +183,7 @@ def plot_traj(traj: np.ndarray, show: bool = False, tfix: float = None) -> None:
             
     plt.close()
     
-# Plot trajectories
+# Plot trajectories, input time ordered trajectories
 def plot_trajs(trajs: np.ndarray, NS: object, fname: str = None, nmax: int = 1_000, show: bool = False) -> None:
     ax = plt.axes()
     ax.set_aspect('equal')
@@ -202,7 +194,7 @@ def plot_trajs(trajs: np.ndarray, NS: object, fname: str = None, nmax: int = 1_0
         try:
             tmin, tmax = min(traj.T[0]), max(traj.T[0])
             ts = np.linspace(tmin, tmax, 1000)
-            smtraj = smoothtraj(traj, NS.T)[1](ts)
+            smtraj = smoothtraj(traj)[1](ts)
             ax.plot(smtraj[2], smtraj[0], lw=.1)
             
         except (TypeError, ValueError):

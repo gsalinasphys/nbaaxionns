@@ -23,7 +23,7 @@ def joinnpys(dirstr: str, jointrajs: bool = False, joinhits: bool = True) -> Non
                 os.remove(''.join([outdir, dirstr, '/', filename, ext]))
             elif filename.endswith('conversion') and joinhits:
                 databt = np.load(''.join([outdir, dirstr, '/', filename, ext]))
-                databt += np.array([tagconv] + [0]*8)
+                databt += np.array([tagconv] + [0]*14)
                 tagconv = databt[-1][0] + 1
                 dataconv.append(databt)
                 os.remove(''.join([outdir, dirstr, '/', filename, ext]))
